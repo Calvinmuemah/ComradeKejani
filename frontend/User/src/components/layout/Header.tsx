@@ -1,12 +1,15 @@
+
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Bell, User, Heart, Menu, Search } from 'lucide-react';
+import { Bell, User, Heart, Menu, Search, Sun, Moon } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { useStore } from '../../store/useStore';
+import { useTheme } from '../../contexts/ThemeContext';
 
 export const Header: React.FC = () => {
   const location = useLocation();
   const { unreadCount, toggleSidebar } = useStore();
+  const { theme, toggleTheme } = useTheme();
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -116,6 +119,11 @@ export const Header: React.FC = () => {
 
             <Button variant="ghost" size="icon">
               <User className="h-5 w-5" />
+            </Button>
+
+            {/* Theme Toggle Button */}
+            <Button variant="ghost" size="icon" onClick={toggleTheme} aria-label="Toggle theme">
+              {theme === 'light' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
             </Button>
           </div>
         </div>

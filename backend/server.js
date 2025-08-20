@@ -12,14 +12,14 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 app.get('/', (req, res) => {
-  res.send('Welcome to Code Clash API');
+  res.send('Welcome to ComradeKejani API');
 });
 // Routes
-app.use('/api', require('./routes/users'));
-app.use('/api/landlords', require('./routes/landLord'));
-app.use('/api/houses', require('./routes/houseRoutes'));
-app.use('/api/reviews', require('./routes/reviewsRoutes'));
-app.use('/api/notifications', require('./routes/notificationsRoutes'));
+app.use('/api/v1/admin', require('./routes/users'));
+app.use('/api/v1/landlords', require('./routes/landLord'));
+app.use('/api/v1/houses', require('./routes/houseRoutes'));
+app.use('/api/v1/reviews', require('./routes/reviewsRoutes'));
+app.use('/api/v1/notifications', require('./routes/notificationsRoutes'));
 
 app.use(errorHandler);
 

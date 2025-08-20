@@ -7,7 +7,7 @@ const upload = require('../middlewares/upload');
 router.post('/create', upload.array('pictures', 5), houseController.createHouse);
 
 // Read
-router.get('/', houseController.getAllHouses);
+router.get('/getAll', houseController.getAllHouses);
 router.get('/:id', houseController.getHouseById);
 
 // Update house (images optional)

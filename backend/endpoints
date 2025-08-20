@@ -1,0 +1,29 @@
+// base url=https://comradekejani-k015.onrender.com
+
+// admin auth
+// /api/v1/admin/register
+// /api/v1/admin/login
+
+// landlord
+// /api/v1/landlords/addLandlord
+// /api/v1/landlords/Landlords
+// /api/v1/landlords/Landlord/:id
+// /api/v1/landlords/Landlord/:id
+// /api/v1/landlords/Landlords/:id
+
+// house
+// /api/v1/houses/create
+// /api/v1/houses/getAll
+// /api/v1/houses/house/:id
+// /api/v1/houses/house/:id
+// /api/v1/houses/house/:id
+
+// reviews
+// /api/v1/reviews/create
+// /api/v1/reviews/house/:houseId
+// /api/v1/reviews/review/:reviewId
+// /api/v1/reviews/review/:reviewId
+
+// notifications
+// /api/v1/notifications/create
+// /api/v1/notifications/getAll

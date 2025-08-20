@@ -7,13 +7,20 @@ const upload = require('../middlewares/upload');
 router.post('/create', upload.array('pictures', 5), houseController.createHouse);
 
 // Read
-router.get('/', houseController.getAllHouses);
-router.get('/:id', houseController.getHouseById);
+router.get('/getAll', houseController.getAllHouses);
+router.get('/house/:id', houseController.getHouseById);
 
 // Update house (images optional)
-router.put('/:id', upload.array('pictures', 5), houseController.updateHouse);
+router.put('/house/:id', upload.array('pictures', 5), houseController.updateHouse);
 
 // Delete
-router.delete('/:id', houseController.deleteHouse);
+router.delete('/house/:id', houseController.deleteHouse);
 
 module.exports = router;
+
+// house
+// /api/v1/houses/create
+// /api/v1/houses/getAll
+// /api/v1/houses/house/:id
+// /api/v1/houses/house/:id
+// /api/v1/houses/house/:id

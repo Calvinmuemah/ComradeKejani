@@ -4,17 +4,23 @@ const Landlord = require('../models/landLord');
 // Create House
 exports.createHouse = async (req, res) => {
     try {
-        const { address, type, rooms, rent, status, security, landlord } = req.body;
+        const { title, price, type, location, amenities, landlordId, status} = req.body;
+        // Check landlord exists
+        const existingLandlord = await Landlord.findById(landlordId);
+        if (!existingLandlord) {
+            return res.status(404).json({ error: 'Landlord not found' });
+        }
+        // Handle uploaded images or fallback to request body
+        const images = req.files ? req.files.map(f => f.path) : req.body.images || [];
 
-        const existingLandlord = await Landlord.findById(landlord);
-        if (!existingLandlord) return res.status(404).json({ error: 'Landlord not found' });
-
-        const pictures = req.files ? req.files.map(f => f.path) : [];
-
-        const house = new House({ address, type, rooms, rent, status, security, landlord, pictures });
+        const house = new House({
+            title, type, price, type, location, images, amenities, landlord: landlordId, status
+        });
+        // Save the house
         await house.save();
         res.status(201).json(house);
     } catch (err) {
+        console.error(err);
         res.status(400).json({ error: err.message });
     }
 };

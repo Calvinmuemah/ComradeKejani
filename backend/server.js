@@ -19,6 +19,7 @@ app.use('/api', require('./routes/users'));
 app.use('/api/landlords', require('./routes/landLord'));
 app.use('/api/houses', require('./routes/houseRoutes'));
 app.use('/api/reviews', require('./routes/reviewsRoutes'));
+app.use('/api/notifications', require('./routes/notificationsRoutes'));
 
 app.use(errorHandler);
 

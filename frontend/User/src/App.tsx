@@ -10,6 +10,8 @@ import { NotificationsPage } from './pages/NotificationsPage';
 import { InsightsPage } from './pages/InsightsPage';
 import { CommunityPage } from './pages/CommunityPage';
 import { SafetyPage } from './pages/SafetyPage';
+import { ComparePage } from './pages/ComparePage';
+import FilterPage from './pages/FilterPage';
 import { useStore } from './store/useStore';
 
 function App() {
@@ -46,6 +48,8 @@ function App() {
                 <Route path="/insights" element={<InsightsPage />} />
                 <Route path="/community" element={<CommunityPage />} />
                 <Route path="/safety" element={<SafetyPage />} />
+                <Route path="/compare" element={<ComparePage />} />
+                <Route path="/filter" element={<FilterPage />} />
                 
                 {/* Placeholder routes for future features */}
                 <Route path="/settings" element={

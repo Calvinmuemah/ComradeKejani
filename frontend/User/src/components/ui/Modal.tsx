@@ -10,12 +10,16 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, children }) => {
   if (!isOpen) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 dark:bg-background/80 backdrop-blur-sm animate-fadeIn">
-      <div className="relative w-full max-w-md p-0">
-        <div className="rounded-xl p-6 shadow-2xl animate-modalPop border border-primary/20 bg-background dark:bg-background/90"
+      <div className="relative w-full max-w-6xl p-0 flex items-center justify-center">
+        <div className="rounded-xl p-8 shadow-2xl animate-modalPop border border-primary/20 bg-background dark:bg-background/90 w-full h-full flex flex-row items-stretch gap-8"
           style={{
             boxShadow: '0 0 32px 8px rgba(99,102,241,0.25), 0 0 0 4px rgba(99,102,241,0.10)',
             background: 'inherit',
             backdropFilter: 'blur(8px)',
+            minHeight: '600px',
+            minWidth: '900px',
+            maxHeight: '90vh',
+            maxWidth: '95vw',
           }}
         >
           <button

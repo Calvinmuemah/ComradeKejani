@@ -10,6 +10,7 @@ import { useStore } from '../store/useStore';
 interface HouseCardProps {
   house: House;
   showCompareButton?: boolean;
+  onClick?: () => void;
 }
 
 const amenityIcons = {
@@ -22,7 +23,7 @@ const amenityIcons = {
   laundry: Shirt,
 };
 
-export const HouseCard: React.FC<HouseCardProps> = ({ house, showCompareButton = true }) => {
+export const HouseCard: React.FC<HouseCardProps> = ({ house, showCompareButton = true, onClick }) => {
   const { favorites, addToFavorites, removeFromFavorites, addToCompare, compareList } = useStore();
   const isFavorited = favorites.some(fav => fav.id === house.id);
   const isInCompare = compareList.some(h => h.id === house.id);
@@ -64,7 +65,7 @@ export const HouseCard: React.FC<HouseCardProps> = ({ house, showCompareButton =
   };
 
   return (
-    <Card className="group overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1 max-w-sm w-full mx-auto card-glow">
+    <Card className="group overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1 max-w-sm w-full mx-auto card-glow" onClick={onClick} style={onClick ? { cursor: 'pointer' } : {}}>
       <div className="relative">
         <Link to={`/house/${house.id}`} tabIndex={-1}>
           <img

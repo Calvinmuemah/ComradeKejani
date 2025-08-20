@@ -42,7 +42,7 @@ export const Sidebar: React.FC = () => {
       `}>
         <div className="flex h-full flex-col">
           {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b">
+          <div className="flex items-center justify-between p-4 ">
             <Link to="/" className="flex items-center gap-2" onClick={toggleSidebar}>
               <div className="h-8 w-8 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
                 <span className="text-white font-bold text-lg">CK</span>

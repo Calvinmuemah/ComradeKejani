@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { TrendingUp, MapPin, Shield, Star } from 'lucide-react';
 import { HouseCard } from '../components/HouseCard';
-import { SearchFilters } from '../components/SearchFilters';
+// import { SearchFilters } from '../components/SearchFilters';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
@@ -57,10 +57,7 @@ export const HomePage: React.FC = () => {
       </div>
 
       {/* Search Section */}
-      <SearchFilters
-        showAdvanced={showAdvancedFilters}
-        onToggleAdvanced={() => setShowAdvancedFilters(!showAdvancedFilters)}
-      />
+    {/* Search Section removed as per request; use header search bar only */}
 
       {/* Quick Stats */}
   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 animate-fadeIn delay-200">
@@ -81,7 +78,9 @@ export const HomePage: React.FC = () => {
         <Card>
           <CardContent className="p-4 text-center">
             <div className="text-2xl font-bold text-yellow-500">
-              {Math.round(houses.reduce((acc, h) => acc + h.rating, 0) / houses.length * 10) / 10}
+              {houses.length > 0
+                ? Math.round(houses.reduce((acc, h) => acc + h.rating, 0) / houses.length * 10) / 10
+                : 'N/A'}
             </div>
             <div className="text-sm text-muted-foreground">Average Rating</div>
           </CardContent>
@@ -89,7 +88,9 @@ export const HomePage: React.FC = () => {
         <Card>
           <CardContent className="p-4 text-center">
             <div className="text-2xl font-bold text-purple-500">
-              KSh {Math.round(houses.reduce((acc, h) => acc + h.price, 0) / houses.length).toLocaleString()}
+              {houses.length > 0
+                ? `KSh ${Math.round(houses.reduce((acc, h) => acc + h.price, 0) / houses.length).toLocaleString()}`
+                : 'N/A'}
             </div>
             <div className="text-sm text-muted-foreground">Average Rent</div>
           </CardContent>

@@ -23,7 +23,7 @@ import {
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
-import { Input } from '../components/ui/Input';
+import { Input } from '../components/ui/Input'; // Only used for review modal, not for search bar
 import { Modal } from '../components/ui/Modal';
 import { useStore } from '../store/useStore';
 
@@ -85,6 +85,7 @@ export const HouseDetailPage: React.FC = () => {
     removeFromFavorites,
     addToCompare,
     compareList,
+    removeFromCompare,
   } = useStore();
 
   useEffect(() => {
@@ -109,6 +110,11 @@ export const HouseDetailPage: React.FC = () => {
   const handleAddToCompare = () => {
     if (!currentHouse || isInCompare || !canAddToCompare) return;
     addToCompare(currentHouse);
+  };
+
+  const handleRemoveFromCompare = () => {
+    if (!currentHouse || !isInCompare) return;
+    removeFromCompare(currentHouse.id);
   };
 
   const getAmenityIcon = (iconName: string) => {
@@ -162,6 +168,7 @@ export const HouseDetailPage: React.FC = () => {
           </Button>
         </div>
       </div>
+      {/* Removed divider line below header */}
 
       {/* Image Gallery */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -428,14 +435,24 @@ export const HouseDetailPage: React.FC = () => {
           {/* Actions */}
           <Card>
             <CardContent className="p-4 space-y-2">
-              <Button
-                onClick={handleAddToCompare}
-                disabled={isInCompare || !canAddToCompare}
-                className="w-full"
-                variant="outline"
-              >
-                {isInCompare ? 'Already in Compare' : 'Add to Compare'}
-              </Button>
+              {!isInCompare ? (
+                <Button
+                  onClick={handleAddToCompare}
+                  disabled={isInCompare || !canAddToCompare}
+                  className="w-full"
+                  variant="outline"
+                >
+                  Add to Compare
+                </Button>
+              ) : (
+                <Button
+                  onClick={handleRemoveFromCompare}
+                  className="w-full"
+                  variant="destructive"
+                >
+                  Remove from Compare
+                </Button>
+              )}
               {/* Removed Schedule Visit and Report Issue buttons */}
               <Button variant="gradient" className="w-full mt-2" onClick={() => setShowReviewModal(true)}>
                 Write Review

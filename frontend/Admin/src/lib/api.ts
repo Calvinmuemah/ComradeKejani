@@ -57,11 +57,62 @@ export async function fetchLandlords(): Promise<Landlord[]> {
 
 
 // Create a house with images and data as multipart/form-data
-export async function createHouse(form: FormData): Promise<any> {
-  const res = await fetch(`${API_BASE_URL}/houses/create`, {
+// Accepts a plain object matching the form structure from AddHousePage
+export async function createHouse(formData: any): Promise<any> {
+  const form = new FormData();
+  form.append('title', formData.title);
+  form.append('price', formData.price);
+  form.append('type', formData.type);
+  form.append('status', formData.status);
+  form.append('landlordId', formData.landlordId);
+  form.append('rating', formData.rating || '0');
+  form.append('safetyRating', formData.safetyRating || '0');
+  // Location fields
+  form.append('location[estate]', formData.location.estate);
+  form.append('location[address]', formData.location.address);
+  form.append('location[coordinates][lat]', formData.location.coordinates.lat);
+  form.append('location[coordinates][lng]', formData.location.coordinates.lng);
+  form.append('location[distanceFromUniversity][walking]', formData.location.distanceFromUniversity.walking);
+  form.append('location[distanceFromUniversity][boda]', formData.location.distanceFromUniversity.boda);
+  form.append('location[distanceFromUniversity][matatu]', formData.location.distanceFromUniversity.matatu);
+  // Nearby essentials (array)
+  formData.location.nearbyEssentials.forEach((n: any, idx: number) => {
+    form.append(`location[nearbyEssentials][${idx}][type]`, n.type);
+    form.append(`location[nearbyEssentials][${idx}][name]`, n.name);
+    form.append(`location[nearbyEssentials][${idx}][distance]`, n.distance);
+  });
+  // Amenities (array)
+  formData.amenities.forEach((a: any, idx: number) => {
+    form.append(`amenities[${idx}][name]`, a.name);
+    form.append(`amenities[${idx}][available]`, a.available ? 'true' : 'false');
+    form.append(`amenities[${idx}][icon]`, a.icon);
+  });
+  // Images (files)
+  formData.images.forEach((file: File) => {
+    form.append('images', file);
+  });
+    // Debug: Log API endpoint and FormData content
+    const endpoint = API_ENDPOINTS.housesCreate || `${API_BASE_URL}/houses/create`;
+    console.log('POST endpoint:', endpoint);
+    // Log all FormData entries
+    const debugFormData = {};
+    form.forEach((value, key) => {
+      if (debugFormData[key]) {
+        if (Array.isArray(debugFormData[key])) debugFormData[key].push(value);
+        else debugFormData[key] = [debugFormData[key], value];
+      } else {
+        debugFormData[key] = value;
+      }
+    });
+    console.log('FormData being sent:', debugFormData);
+  const res = await fetch(API_ENDPOINTS.housesCreate || `${API_BASE_URL}/houses/create`, {
     method: 'POST',
     body: form,
   });
   if (!res.ok) throw new Error('Failed to create house');
   return await res.json();
+}
+// Add to API_ENDPOINTS for house creation
+if (!API_ENDPOINTS.housesCreate) {
+  API_ENDPOINTS.housesCreate = `${API_BASE_URL}/houses/create`;
 }

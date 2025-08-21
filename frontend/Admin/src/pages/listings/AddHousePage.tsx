@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Upload } from 'lucide-react';
+import { createHouse } from '../../lib/api';
 
 const initialNearby = [
   { type: '', name: '', distance: '' }
@@ -18,7 +19,7 @@ type FormDataType = {
   type: string;
   status: string;
   images: File[];
-  landlord: string;
+  landlordId: string;
   rating: string;
   safetyRating: string;
   location: {
@@ -75,7 +76,7 @@ const AddHouse: React.FC = () => {
     type: '',
     status: 'vacant',
     images: [],
-    landlord: '',
+    landlordId: '',
     rating: '',
     safetyRating: '',
     location: {
@@ -230,45 +231,8 @@ const AddHouse: React.FC = () => {
     setSubmitting(true);
     setSubmitError(null);
     try {
-      // Build FormData for multipart/form-data
-      const form = new FormData();
-      form.append('title', formData.title);
-      form.append('price', formData.price);
-      form.append('type', formData.type);
-      form.append('status', formData.status);
-      form.append('landlord', formData.landlord);
-      form.append('rating', formData.rating || '0');
-      form.append('safetyRating', formData.safetyRating || '0');
-      // Location fields
-      form.append('location[estate]', formData.location.estate);
-      form.append('location[address]', formData.location.address);
-      form.append('location[coordinates][lat]', formData.location.coordinates.lat);
-      form.append('location[coordinates][lng]', formData.location.coordinates.lng);
-      form.append('location[distanceFromUniversity][walking]', formData.location.distanceFromUniversity.walking);
-      form.append('location[distanceFromUniversity][boda]', formData.location.distanceFromUniversity.boda);
-      form.append('location[distanceFromUniversity][matatu]', formData.location.distanceFromUniversity.matatu);
-      // Nearby essentials (array)
-      formData.location.nearbyEssentials.forEach((n, idx) => {
-        form.append(`location[nearbyEssentials][${idx}][type]`, n.type);
-        form.append(`location[nearbyEssentials][${idx}][name]`, n.name);
-        form.append(`location[nearbyEssentials][${idx}][distance]`, n.distance);
-      });
-      // Amenities (array)
-      formData.amenities.forEach((a, idx) => {
-        form.append(`amenities[${idx}][name]`, a.name);
-        form.append(`amenities[${idx}][available]`, a.available ? 'true' : 'false');
-        form.append(`amenities[${idx}][icon]`, a.icon);
-      });
-      // Images (files)
-      formData.images.forEach((file) => {
-        form.append('images', file);
-      });
-      // Send request
-      const res = await fetch('https://comradekejani-k015.onrender.com/api/v1/houses/create', {
-        method: 'POST',
-        body: form,
-      });
-      if (!res.ok) throw new Error('Failed to create house');
+      // Use centralized API utility
+      await createHouse(formData);
       navigate('/listings');
     } catch (err: any) {
       setSubmitError('Failed to add house. Please check your details and try again.');
@@ -434,9 +398,9 @@ const AddHouse: React.FC = () => {
               <div>
                 <label className="block text-sm font-medium mb-1">Landlord</label>
                 <select
-                  name="landlord"
+                  name="landlordId"
                   required
-                  value={formData.landlord}
+                  value={formData.landlordId}
                   onChange={handleChange}
                   className="block w-full bg-oxford-900 border border-gray-800 rounded-lg text-gray-200 focus:ring-2 focus:ring-blue-600 focus:border-blue-600 shadow-sm transition-all sm:text-sm p-3"
                   disabled={loadingLandlords}

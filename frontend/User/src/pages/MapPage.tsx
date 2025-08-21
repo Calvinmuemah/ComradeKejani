@@ -135,8 +135,18 @@ export const MapPage: React.FC = () => {
                       <div className="flex flex-wrap gap-2">
                         {house.amenities && house.amenities.length > 0 ? (
                           house.amenities.slice(0, 4).map(amenity => (
-                            <Badge key={amenity.name || amenity} variant="outline" className="text-xs">
-                              {amenity.name || amenity}
+                            <Badge
+                              key={
+                                typeof amenity === 'object' && amenity !== null && 'name' in amenity
+                                  ? String((amenity as { name: string }).name)
+                                  : String(amenity)
+                              }
+                              variant="outline"
+                              className="text-xs"
+                            >
+                              {typeof amenity === 'object' && amenity !== null && 'name' in amenity
+                                ? (amenity as { name: string }).name
+                                : String(amenity)}
                             </Badge>
                           ))
                         ) : (

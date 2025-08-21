@@ -3,6 +3,9 @@
 // admin auth
 // POST ====/api/v1/admin/register
 // POST ====/api/v1/admin/login
+// GET user by id ====/api/v1/admin/:userId
+// PUT user infor by id ====/api/v1/admin/:userId
+
 
 // landlord
 // POST create a landlord ====/api/v1/landlords/addLandlord
@@ -27,3 +30,5 @@
 // notifications
 // POST create a notification ====/api/v1/notifications/create
 // GET all notifications ====/api/v1/notifications/getAll
+// PUT a notification by ID ====/api/v1/notifications/updateNotification/:id
+// DELETE a notification by ID ====/api/v1/notifications/deleteNotification/:id

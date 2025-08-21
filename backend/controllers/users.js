@@ -5,9 +5,9 @@ const jwt = require('jsonwebtoken');
 // Registration
 exports.register = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, phone } = req.body;
 
-    if (!email || !password || !name) {
+    if (!email || !password || !name || !phone) {
       return res.status(400).json({ message: "All fields are required" });
     }
 
@@ -15,7 +15,7 @@ exports.register = async (req, res) => {
     if (existingUser) return res.status(400).json({ message: "User already exists" });
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const newUser = await User.create({ name, email, password: hashedPassword });
+    const newUser = await User.create({ name, email, password: hashedPassword, phone});
 
     const token = jwt.sign({ id: newUser._id }, process.env.JWT_SECRET, { expiresIn: "7d" });
     res.status(201).json({ token });
@@ -46,36 +46,42 @@ exports.login = async (req, res) => {
   }
 };
 
-// Google Sign-In
-exports.googleLogin = async (req, res) => {
-  try {
-    const { name, email, googleId, avatar } = req.body;
+// Get user details
+exports.getUserDetails = async (req, res) => {
+    try {
+        const { userId } = req.params;
 
-    if (!email || !googleId || !name) {
-      return res.status(400).json({ message: "Missing required fields" });
+        // Exclude __v and password
+        const user = await User.findById(userId).select('-__v -password');
+
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        res.status(200).json(user);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
+};
 
-    let user = await User.findOne({ email });
+exports.updateUser = async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const { name, email, phone, avatar } = req.body;
 
-    // User exists but not via Google
-    if (user && !user.googleId) {
-      return res.status(400).json({ message: "Email already registered with password" });
+        // Update user fields
+        const updatedUser = await User.findByIdAndUpdate(
+            userId,
+            { name, email, phone, avatar },
+            { new: true, runValidators: true, context: 'query' }
+        ).select('-__v -password'); // exclude password
+
+        if (!updatedUser) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        res.status(200).json(updatedUser);
+    } catch (err) {
+        res.status(400).json({ error: err.message });
     }
-
-    // Create user if doesn't exist
-    if (!user) {
-      user = await User.create({
-        name,
-        email,
-        googleId,
-        avatar,
-      });
-    }
-
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "7d" });
-    res.status(200).json({ token, user });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Google login failed" });
-  }
 };

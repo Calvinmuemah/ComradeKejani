@@ -17,10 +17,12 @@ COPY . .
 RUN npm run build
 
 # Production image
+
 FROM nginx:alpine
 WORKDIR /usr/share/nginx/html
 
-RUN rm -rf ./
+# Remove all contents (including hidden files) but not the directory itself
+RUN rm -rf ./* ./.??*
 COPY --from=build /app/dist .
 
 # Copy custom nginx config if needed

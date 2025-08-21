@@ -2,28 +2,41 @@ const House = require('../models/House');
 const Landlord = require('../models/landLord');
 
 // Create House
+// Create House
 exports.createHouse = async (req, res) => {
-    try {
-        const { title, price, type, location, amenities, landlordId, status} = req.body;
-        // Check landlord exists
-        const existingLandlord = await Landlord.findById(landlordId);
-        if (!existingLandlord) {
-            return res.status(404).json({ error: 'Landlord not found' });
-        }
-        // Handle uploaded images or fallback to request body
-        const images = req.files ? req.files.map(f => f.path) : req.body.images || [];
+  try {
+    const { title, price, type, location, amenities, landlordId, status } = req.body;
 
-        const house = new House({
-            title, type, price, type, location, images, amenities, landlord: landlordId, status
-        });
-        // Save the house
-        await house.save();
-        res.status(201).json(house);
-    } catch (err) {
-        console.error(err);
-        res.status(400).json({ error: err.message });
+    // Check landlord exists
+    const existingLandlord = await Landlord.findById(landlordId);
+    if (!existingLandlord) {
+      return res.status(404).json({ error: 'Landlord not found' });
     }
+
+    // Handle uploaded images
+    const images = req.files
+      ? req.files.map(f => `/uploads/${f.filename}`)
+      : req.body.images || [];
+
+    const house = new House({
+      title,
+      price,
+      type,
+      location,
+      images,
+      amenities,
+      landlord: landlordId,
+      status
+    });
+
+    await house.save();
+    res.status(201).json(house);
+  } catch (err) {
+    console.error(err);
+    res.status(400).json({ error: err.message });
+  }
 };
+
 
 // Get All Houses
 exports.getAllHouses = async (req, res) => {

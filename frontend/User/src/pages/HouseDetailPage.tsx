@@ -26,6 +26,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card'
 import { Input } from '../components/ui/Input'; // Only used for review modal, not for search bar
 import { Modal } from '../components/ui/Modal';
 import { useStore } from '../store/useStore';
+import { apiService } from '../services/api';
 
 const amenityIcons = {
   wifi: Wifi,
@@ -38,6 +39,11 @@ const amenityIcons = {
 };
 
 export const HouseDetailPage: React.FC = () => {
+  // Always get id from useParams at the very top
+  const { id } = useParams<{ id: string }>();
+
+  const [hoveredImgIdx, setHoveredImgIdx] = useState<number | null>(null);
+  const [mainImgIdx, setMainImgIdx] = useState(0);
   // Modal state for Write Review
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [reviewName, setReviewName] = useState('');
@@ -45,9 +51,40 @@ export const HouseDetailPage: React.FC = () => {
   const [reviewRating, setReviewRating] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  type Review = {
+    id: string;
+    userName: string;
+    comment: string;
+    rating: number;
+    createdAt: Date;
+    helpful: number;
+    // Add any other fields your review object has
+  };
+  const [reviews, setReviews] = useState<Review[]>([]); // fetched reviews
+  const [reviewsLoading, setReviewsLoading] = useState(false);
+  const [reviewsError, setReviewsError] = useState('');
+  // Fetch reviews for this house
+  // Use apiService for reviews
 
-  // Add review handler (simulate, since no backend)
-  const handleSubmitReview = (e: React.FormEvent) => {
+  useEffect(() => {
+    const fetchReviews = async () => {
+      if (!id) return;
+      setReviewsLoading(true);
+      setReviewsError('');
+      try {
+        const data = await apiService.getReviewsByHouseId(id);
+        setReviews(data);
+      } catch {
+        setReviewsError('Could not load reviews');
+      } finally {
+        setReviewsLoading(false);
+      }
+    };
+    fetchReviews();
+  }, [id]);
+
+  // Add review handler (real API)
+  const handleSubmitReview = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
     if (!reviewName.trim() || !reviewText.trim() || reviewRating === 0) {
@@ -55,26 +92,25 @@ export const HouseDetailPage: React.FC = () => {
       return;
     }
     setSubmitting(true);
-    setTimeout(() => {
-      // Simulate adding review (in real app, call API)
-      if (currentHouse) {
-        currentHouse.reviews.unshift({
-          id: Date.now().toString(),
-          userName: reviewName,
-          comment: reviewText,
-          rating: reviewRating,
-          createdAt: new Date(),
-          helpful: 0,
-        });
-      }
-      setSubmitting(false);
+    try {
+      await apiService.submitReview(id!, {
+        userName: reviewName,
+        comment: reviewText,
+        rating: reviewRating,
+      });
       setShowReviewModal(false);
       setReviewName('');
       setReviewText('');
       setReviewRating(0);
-    }, 1200);
+      // Refetch reviews
+      const data = await apiService.getReviewsByHouseId(id!);
+      setReviews(data);
+    } catch {
+      setErrorMsg('Failed to submit review.');
+    } finally {
+      setSubmitting(false);
+    }
   };
-  const { id } = useParams<{ id: string }>();
   const {
     currentHouse,
     loading,
@@ -172,24 +208,42 @@ export const HouseDetailPage: React.FC = () => {
 
       {/* Image Gallery */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="aspect-video overflow-hidden rounded-lg">
+        <div
+          className={`aspect-video overflow-hidden rounded-lg border border-primary/30 transition-all duration-300 ${hoveredImgIdx === 0 ? 'z-50 scale-110 shadow-2xl ring-4 ring-primary/40' : hoveredImgIdx !== null ? 'blur-sm opacity-60' : ''}`}
+          style={{ position: hoveredImgIdx === 0 ? 'relative' : undefined }}
+          onMouseEnter={() => setHoveredImgIdx(0)}
+          onMouseLeave={() => setHoveredImgIdx(null)}
+        >
           <img
-            src={currentHouse.images[0]}
+            src={currentHouse.images[mainImgIdx]}
             alt={currentHouse.title}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover border border-primary/40 transition-all duration-300"
           />
         </div>
         {currentHouse.images.length > 1 && (
           <div className="grid grid-cols-2 gap-4">
-            {currentHouse.images.slice(1, 5).map((image, index) => (
-              <div key={index} className="aspect-video overflow-hidden rounded-lg">
-                <img
-                  src={image}
-                  alt={`${currentHouse.title} ${index + 2}`}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            ))}
+            {currentHouse.images
+              .map((img, idx) => ({ img, idx }))
+              .filter(({ idx }) => idx !== mainImgIdx)
+              .slice(0, 4)
+              .map(({ img, idx }, i) => (
+                <div
+                  key={idx}
+                  className={`aspect-video overflow-hidden rounded-lg border border-primary/30 transition-all duration-300 ${hoveredImgIdx === i + 1 ? 'z-50 scale-110 shadow-2xl ring-4 ring-primary/40' : hoveredImgIdx !== null ? 'blur-sm opacity-60' : ''}`}
+                  style={{ position: hoveredImgIdx === i + 1 ? 'relative' : undefined }}
+                  onMouseEnter={() => setHoveredImgIdx(i + 1)}
+                  onMouseLeave={() => setHoveredImgIdx(null)}
+                  onClick={() => setMainImgIdx(idx)}
+                  role="button"
+                  tabIndex={0}
+                >
+                  <img
+                    src={img}
+                    alt={`${currentHouse.title} ${idx + 1}`}
+                    className="w-full h-full object-cover border border-primary/40 transition-all duration-300 cursor-pointer"
+                  />
+                </div>
+              ))}
           </div>
         )}
       </div>
@@ -314,8 +368,8 @@ export const HouseDetailPage: React.FC = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {currentHouse.location.nearbyEssentials.map((place, index) => (
-                  <div key={index} className="flex items-center justify-between p-2 bg-muted/50 rounded">
+                {currentHouse.location.nearbyEssentials.map((place) => (
+                  <div key={place.name} className="flex items-center justify-between p-2 bg-muted/50 rounded">
                     <div className="flex items-center gap-2">
                       <div className="w-2 h-2 rounded-full bg-primary" />
                       <span className="font-medium">{place.name}</span>
@@ -341,11 +395,15 @@ export const HouseDetailPage: React.FC = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {currentHouse.reviews.length === 0 ? (
+              {reviewsLoading ? (
+                <p className="text-muted-foreground">Loading reviews...</p>
+              ) : reviewsError ? (
+                <p className="text-destructive">{reviewsError}</p>
+              ) : reviews.length === 0 ? (
                 <p className="text-muted-foreground">No reviews yet. Be the first to review!</p>
               ) : (
                 <div className="space-y-4">
-                  {currentHouse.reviews.map((review) => (
+                  {reviews.map((review) => (
                     <div key={review.id} className="border-b pb-4 last:border-b-0">
                       <div className="flex items-start justify-between">
                         <div>
@@ -366,7 +424,7 @@ export const HouseDetailPage: React.FC = () => {
                           </div>
                           <p className="text-sm text-muted-foreground flex items-center gap-2 mt-1">
                             <Clock className="h-3 w-3" />
-                            {review.createdAt.toLocaleDateString()}
+                            {review.createdAt instanceof Date ? review.createdAt.toLocaleDateString() : new Date(review.createdAt).toLocaleDateString()}
                           </p>
                         </div>
                       </div>

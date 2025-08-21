@@ -20,7 +20,6 @@ import {
 // API Service - Centralized API calls
 // Replace dummy data with real API endpoints when backend is ready
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
 // Simulate API delay
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -33,7 +32,7 @@ class ApiService {
     return { success: true, token: 'dummy-token', user: { id: '1', email: credentials.email } };
   }
 
-  async register(userData: { name: string; email: string; password: string; phone: string }) {
+  async register(_: { name: string; email: string; password: string; phone: string }) {
     await delay(1000);
     // TODO: Replace with real registration
     return { success: true, message: 'Registration successful' };
@@ -41,25 +40,70 @@ class ApiService {
 
   // House listings endpoints
   async getHouses(filters?: Partial<SearchFilters>): Promise<House[]> {
-    await delay(800);
-    // TODO: Replace with real API call
-    // const response = await fetch(`${API_BASE_URL}/houses`, {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify(filters)
-    // });
-    // return response.json();
-    
-    return this.filterHouses(dummyHouses, filters);
+    // Use real backend endpoint
+    const response = await fetch('https://comradekejani-k015.onrender.com/api/v1/houses/getAll');
+    if (!response.ok) throw new Error('Failed to fetch houses');
+    const data = await response.json();
+    // Optionally filter client-side if filters are provided (backend does not support filters yet)
+    let houses = data;
+    if (filters) {
+      houses = this.filterHouses(houses, filters);
+    }
+    // Map backend _id to id and landlord fields if needed
+    const BASE_URL = 'https://comradekejani-k015.onrender.com';
+    return houses.map((house: Record<string, unknown>) => ({
+      ...house,
+      id: (house as any)._id,
+      images: Array.isArray((house as any).images)
+        ? (house as any).images.map((img: string) =>
+            img.startsWith('/uploads/') ? `${BASE_URL}${img}` : img
+          )
+        : [],
+      landlord: {
+        ...(house as any).landlord,
+        name: (house as any).landlord?.name || '',
+        phone: (house as any).landlord?.phone || '',
+        email: (house as any).landlord?.email || '',
+        verified: (house as any).landlord?.verified || false,
+        rating: (house as any).landlord?.rating || 0,
+      },
+      verification: {
+        verified: (house as any).landlord?.verified || false,
+        badges: [],
+      },
+      createdAt: new Date((house as any).createdAt),
+      updatedAt: new Date((house as any).updatedAt),
+    }));
   }
 
   async getHouseById(id: string): Promise<House | null> {
-    await delay(500);
-    // TODO: Replace with real API call
-    // const response = await fetch(`${API_BASE_URL}/houses/${id}`);
-    // return response.json();
-    
-    return dummyHouses.find(house => house.id === id) || null;
+    const response = await fetch(`https://comradekejani-k015.onrender.com/api/v1/houses/house/${id}`);
+    if (!response.ok) throw new Error('Failed to fetch house');
+    const house = await response.json();
+    const BASE_URL = 'https://comradekejani-k015.onrender.com';
+    return {
+      ...house,
+      id: house._id,
+      images: Array.isArray(house.images)
+        ? house.images.map((img: string) =>
+            img.startsWith('/uploads/') ? `${BASE_URL}${img}` : img
+          )
+        : [],
+      landlord: {
+        ...house.landlord,
+        name: house.landlord?.name || '',
+        phone: house.landlord?.phone || '',
+        email: house.landlord?.email || '',
+        verified: house.landlord?.verified || false,
+        rating: house.landlord?.rating || 0,
+      },
+      verification: {
+        verified: house.landlord?.verified || false,
+        badges: [],
+      },
+      createdAt: new Date(house.createdAt),
+      updatedAt: new Date(house.updatedAt),
+    };
   }
 
   async getFavorites(): Promise<House[]> {
@@ -68,13 +112,13 @@ class ApiService {
     return dummyHouses.slice(0, 2); // Mock favorites
   }
 
-  async addToFavorites(houseId: string): Promise<{ success: boolean }> {
+  async addToFavorites(_: string): Promise<{ success: boolean }> {
     await delay(400);
     // TODO: Replace with real API call
     return { success: true };
   }
 
-  async removeFromFavorites(houseId: string): Promise<{ success: boolean }> {
+  async removeFromFavorites(_: string): Promise<{ success: boolean }> {
     await delay(400);
     // TODO: Replace with real API call
     return { success: true };
@@ -91,13 +135,13 @@ class ApiService {
     );
   }
 
-  async getAIRecommendations(preferences?: UserPreferences): Promise<AIRecommendation[]> {
+  async getAIRecommendations(_: UserPreferences | undefined = undefined): Promise<AIRecommendation[]> {
     await delay(1000);
     // TODO: Replace with real AI API
     return dummyAIRecommendations;
   }
 
-  async submitAIFeedback(recommendationId: string, helpful: boolean): Promise<{ success: boolean }> {
+  async submitAIFeedback(_: string, __: boolean): Promise<{ success: boolean }> {
     await delay(300);
     // TODO: Replace with real API call
     return { success: true };
@@ -135,27 +179,45 @@ class ApiService {
     return dummyNotifications;
   }
 
-  async markNotificationAsRead(notificationId: string): Promise<{ success: boolean }> {
+  async markNotificationAsRead(_: string): Promise<{ success: boolean }> {
     await delay(300);
     // TODO: Replace with real API call
     return { success: true };
   }
 
+
   // Reviews endpoints
+  async getReviewsByHouseId(houseId: string) {
+    const res = await fetch(`https://comradekejani-k015.onrender.com/api/v1/reviews/house/${houseId}`);
+    if (!res.ok) throw new Error('Failed to fetch reviews');
+    const data = await res.json();
+    return Array.isArray(data)
+      ? data.map(r => ({ ...r, createdAt: new Date(r.createdAt) }))
+      : [];
+  }
+
   async submitReview(houseId: string, review: {
+    userName: string;
     rating: number;
     comment: string;
   }): Promise<{ success: boolean }> {
-    await delay(800);
-    // TODO: Replace with real API call
+    const res = await fetch('https://comradekejani-k015.onrender.com/api/v1/reviews/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        houseId,
+        ...review,
+      }),
+    });
+    if (!res.ok) throw new Error('Failed to submit review');
     return { success: true };
   }
 
   // Contact and inquiries
-  async contactLandlord(houseId: string, message: string): Promise<{ success: boolean }> {
+  async contactLandlord(houseId: string, _: string): Promise<{ success: boolean; houseId: string }> {
     await delay(600);
     // TODO: Replace with real API call
-    return { success: true };
+    return { success: true, houseId };
   }
 
   // Utility methods for filtering (remove when real API is implemented)

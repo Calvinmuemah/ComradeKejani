@@ -4,17 +4,17 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card'
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 // Alert and AlertDescription are not in your UI, so we will use Card for alerts
-import { dummySafetyAlerts, popularEstates } from '../data/dummyData';
 
+import { useStore } from '../store/useStore';
 export const SafetyPage = () => {
   const [selectedArea, setSelectedArea] = useState<string | null>(null);
-
+  const { houses } = useStore();
+  // You may want to fetch safety alerts from backend in future
   const getSeverityColor = (severity: number) => {
     if (severity >= 4) return 'destructive';
     if (severity >= 2) return 'default';
     return 'secondary';
   };
-
   const getSeverityIcon = (type: string) => {
     switch (type) {
       case 'warning': return AlertTriangle;
@@ -22,7 +22,13 @@ export const SafetyPage = () => {
       default: return Info;
     }
   };
-
+  // No real safety alerts endpoint yet, so skip rendering dummySafetyAlerts
+  // For area safety ratings, use houses to infer estates
+  const estateCounts: Record<string, number> = {};
+  houses.forEach(house => {
+    estateCounts[house.location.estate] = (estateCounts[house.location.estate] || 0) + 1;
+  });
+  const popularEstates = Object.entries(estateCounts).map(([name, houses]) => ({ name, houses }));
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
@@ -76,36 +82,7 @@ export const SafetyPage = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {dummySafetyAlerts.map((alert) => {
-                  const IconComponent = getSeverityIcon(alert.type);
-                  // Severity is not in your dummy data, so we mock it
-                  const severity = alert.type === 'danger' ? 5 : alert.type === 'warning' ? 3 : 1;
-                  return (
-                    <Card key={alert.id} className={`border-l-4 ${
-                      severity >= 4 ? 'border-l-red-500' : 
-                      severity >= 2 ? 'border-l-orange-500' : 
-                      'border-l-blue-500'
-                    } p-4`}> 
-                      <div className="flex items-center gap-2 mb-2">
-                        <IconComponent className="h-4 w-4" />
-                        <h4 className="font-semibold text-foreground">{alert.message}</h4>
-                        <Badge variant={getSeverityColor(severity)} className="text-xs">
-                          {alert.type}
-                        </Badge>
-                      </div>
-                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <MapPin className="w-3 h-3" />
-                          {alert.area}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
-                          {alert.timestamp instanceof Date ? alert.timestamp.toLocaleDateString() : new Date(alert.timestamp).toLocaleDateString()}
-                        </span>
-                      </div>
-                    </Card>
-                  );
-                })}
+                {/* No real safety alerts yet. Integrate when backend is ready. */}
               </CardContent>
             </Card>
 

@@ -10,8 +10,8 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
+// ...existing code...
 import { useStore } from '../store/useStore';
-import { dummyPriceTrends, popularEstates } from '../data/dummyData';
 
 export const InsightsPage: React.FC = () => {
   const { houses, loading } = useStore();
@@ -24,7 +24,6 @@ export const InsightsPage: React.FC = () => {
   const averageRating = Math.round((houses.reduce((acc, h) => acc + h.rating, 0) / (houses.length || 1)) * 10) / 10;
 
   // Removed unused priceRanges
-
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
@@ -132,25 +131,7 @@ export const InsightsPage: React.FC = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {dummyPriceTrends.map((trend) => (
-                  <div key={`${trend.estate}-${trend.houseType}`} className="border rounded-lg p-4">
-                    <div className="flex justify-between items-center mb-3">
-                      <div>
-                        <h4 className="font-semibold text-foreground">{trend.estate}</h4>
-                        <p className="text-sm text-muted-foreground capitalize">{trend.houseType}</p>
-                      </div>
-                      <Badge variant="outline">
-                        KSh {trend.averagePrice.toLocaleString()}
-                      </Badge>
-                    </div>
-                    <div className="h-20 bg-muted rounded flex items-end justify-between px-2 py-2">
-                      {/* Simulated bar chart */}
-                      <div className="bg-primary/60 w-8 rounded-t h-2/3 min-h-[8px]" />
-                      <div className="bg-primary/60 w-8 rounded-t h-1/2 min-h-[8px]" />
-                      <div className="bg-primary/60 w-8 rounded-t h-3/4 min-h-[8px]" />
-                    </div>
-                  </div>
-                ))}
+                {/* No real price trends endpoint yet. Integrate when backend is ready. */}
               </div>
             </CardContent>
           </Card>

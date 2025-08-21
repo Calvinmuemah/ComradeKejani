@@ -4,7 +4,7 @@ import { Users, MessageCircle, ThumbsUp, Star, Clock, User } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
-import { dummyAIRecommendations, dummyHouses } from '../data/dummyData';
+import { useStore } from '../store/useStore';
 
 interface ForumPost {
   id: string;
@@ -43,16 +43,14 @@ const forumPosts: ForumPost[] = [
 
 export const CommunityPage = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-
   const categories = ['all', 'Housing Advice', 'Amenities', 'Safety', 'General'];
-
   const filteredPosts = selectedCategory === 'all' 
     ? forumPosts 
     : forumPosts.filter(post => post.category === selectedCategory);
-
-  // For AI Recommendations, map dummyAIRecommendations to house data
-  const recommendations = dummyAIRecommendations.map((rec, idx) => {
-    const house = dummyHouses.find(h => h.id === rec.houseId);
+  // Use real data from store
+  const { aiRecommendations, houses } = useStore();
+  const recommendations = aiRecommendations.map((rec, idx) => {
+    const house = houses.find(h => h.id === rec.houseId);
     return {
       id: rec.houseId,
       title: house ? house.title : `Recommended House #${idx + 1}`,
@@ -61,9 +59,7 @@ export const CommunityPage = () => {
       reasons: rec.reasons,
     };
   });
-
-  // For Recent Reviews, flatten all reviews from dummyHouses
-  const reviews = dummyHouses.flatMap(house => house.reviews.map(r => ({
+  const reviews = houses.flatMap(house => house.reviews.map(r => ({
     ...r,
     houseTitle: house.title
   })));

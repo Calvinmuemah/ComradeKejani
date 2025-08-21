@@ -1,7 +1,7 @@
 // Centralized API endpoints for the application
 // Update these as needed for your backend
 
-export const API_BASE_URL = 'https://1g17qnls-3000.uks1.devtunnels.ms/api/v1';
+export const API_BASE_URL = 'https://comradekejani-k015.onrender.com/api/v1';
 
 export const API_ENDPOINTS = {
   // Auth

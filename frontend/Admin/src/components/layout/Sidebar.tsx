@@ -65,15 +65,12 @@ const navigation = [
     permission: null
   },
   {
-    name: 'Homepage',
-    href: '/homepage',
+  // ...removed Homepage...
     icon: FileText,
     permission: null
   },
   {
-    name: 'AI Center',
-    href: '/ai',
-    icon: Brain,
+  // ...removed AI Center...
     permission: null
   },
   {
@@ -101,7 +98,7 @@ const Sidebar: React.FC = () => {
           {/* Main */}
           <div className="space-y-2">
             <div className="text-xs uppercase tracking-wider text-gray-400 mb-2">Main</div>
-            {navigation.filter(item => ["Dashboard", "Homepage", "AI Center"].includes(item.name)).map((item) => (
+            {navigation.filter(item => ["Dashboard"].includes(item.name)).map((item) => (
               <NavLink
                 key={item.name}
                 to={item.href}

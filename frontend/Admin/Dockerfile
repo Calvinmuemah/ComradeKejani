@@ -1,9 +1,9 @@
-
 # Note: Exposing port 80 inside the container is standard. To avoid conflicts when running multiple containers,
 # map each container's port 80 to a different host port, e.g.:
 #   docker run -p 8081:80 admin-frontend
 #   docker run -p 8080:80 user-frontend
-# Dockerfile for User Frontend (Vite + React + Tailwind)
+
+# Dockerfile for Admin Frontend (Vite + React + Tailwind)
 FROM node:20-alpine AS build
 
 WORKDIR /app
@@ -20,7 +20,7 @@ RUN npm run build
 FROM nginx:alpine
 WORKDIR /usr/share/nginx/html
 
-RUN rm -rf ./*
+RUN rm -rf ./
 COPY --from=build /app/dist .
 
 # Copy custom nginx config if needed

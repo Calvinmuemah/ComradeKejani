@@ -1,0 +1,10 @@
+.property-row {
+  border: 2px solid transparent;
+  border-radius: 0.75rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.property-row:hover {
+  border-color: #2563eb; /* blue-600 */
+  box-shadow: 0 0 0 2px #2563eb, 0 2px 8px 0 rgba(37,99,235,0.15);
+  background: none !important;
+}

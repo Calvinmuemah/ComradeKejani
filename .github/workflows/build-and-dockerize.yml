@@ -1,4 +1,7 @@
-name: Build and Dockerize User Frontend
+name: Build and Dockerize User & Admin Frontends
+  # Note: Both Docker images expose port 80 inside the container. To avoid conflicts when running both containers on the same host, map each to a different host port, e.g.:
+  #   docker run -p 8080:80 user-frontend
+  #   docker run -p 8081:80 admin-frontend
 
 on:
   push:
@@ -30,10 +33,18 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build Docker image
+      - name: Build Docker image (User)
         uses: docker/build-push-action@v5
         with:
           context: ./frontend/User
           file: ./frontend/User/Dockerfile
           push: false
           tags: user-frontend:latest
+
+      - name: Build Docker image (Admin)
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend/Admin
+          file: ./frontend/Admin/Dockerfile
+          push: false
+          tags: admin-frontend:latest

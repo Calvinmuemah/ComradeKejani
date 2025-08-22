@@ -33,6 +33,8 @@ export const API_ENDPOINTS = {
 };
 
 
+// --- Auth Helpers ---
+
 // Store token in sessionStorage
 export function storeAuthToken(token: string) {
   sessionStorage.setItem('authToken', token);
@@ -41,6 +43,26 @@ export function storeAuthToken(token: string) {
 // Retrieve token from sessionStorage
 export function getAuthToken(): string | null {
   return sessionStorage.getItem('authToken');
+}
+
+// Clear auth token and session data
+export function clearAuthSession() {
+  sessionStorage.removeItem('authToken');
+  sessionStorage.removeItem('kejani_admin_user');
+}
+
+// Helper function for authenticated API requests
+export async function fetchWithAuth(url: string, options: RequestInit = {}): Promise<Response> {
+  const token = getAuthToken();
+  const headers = {
+    ...options.headers,
+    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+  };
+  
+  return fetch(url, {
+    ...options,
+    headers
+  });
 }
 
 // --- Centralized API Functions ---

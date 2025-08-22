@@ -5,11 +5,11 @@ import {
   Shield, 
   TrendingUp, 
   Eye, 
-  Phone, 
   AlertTriangle,
   CheckCircle,
   Clock,
-  MapPin
+  MapPin,
+  Phone
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
@@ -92,13 +92,13 @@ const Dashboard: React.FC = () => {
     <div className="space-y-6">
 
       <div>
-        <h1 className="text-3xl font-bold text-white">Dashboard</h1>
-        <p className="text-blue-100">Overview of your platform's performance</p>
+        <h1 className="text-2xl sm:text-3xl font-bold text-white">Dashboard</h1>
+        <p className="text-blue-100 text-sm sm:text-base">Overview of your platform's performance</p>
       </div>
 
       {/* Stats Overview - Modern Card UI */}
       {/* Quick Stats Cards (Top Row) */}
-  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8 w-full mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 sm:gap-8 w-full mb-8">
         {/* Total Verified Houses */}
   <a href="/admin/listings" className="group bg-oxford-900 border border-blue-500/20 rounded-xl p-4 flex flex-col justify-between min-h-[110px] min-w-[170px] transition-transform duration-200 hover:scale-105 hover:shadow-[0_0_32px_8px_rgba(59,130,246,0.7)] cursor-pointer">
           <div className="flex items-center gap-3 mb-2">
@@ -203,9 +203,9 @@ const Dashboard: React.FC = () => {
               <input type="date" className="bg-oxford-800 text-white text-sm rounded px-2 py-1 border border-gray-700" />
             </div>
           </div>
-          <div className="flex flex-row items-center gap-4">
+          <div className="flex flex-col sm:flex-row items-center gap-4">
             {/* Simple SVG Donut Chart */}
-            <svg viewBox="0 0 80 80" width="80" height="80">
+            <svg viewBox="0 0 80 80" className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 lg:w-20 lg:h-20">
               <circle cx="40" cy="40" r="32" stroke="#334155" strokeWidth="12" fill="none" />
               <circle cx="40" cy="40" r="32" stroke="#60a5fa" strokeWidth="12" fill="none" strokeDasharray="201" strokeDashoffset="84" />
               <circle cx="40" cy="40" r="32" stroke="#f59e42" strokeWidth="12" fill="none" strokeDasharray="201" strokeDashoffset="134" />
@@ -213,7 +213,7 @@ const Dashboard: React.FC = () => {
               <text x="40" y="48" textAnchor="middle" fill="#fff" fontSize="22" fontWeight="bold">88%</text>
             </svg>
             <div>
-              <div className="text-2xl font-bold text-white">KES 1,245,000</div>
+              <div className="text-xl sm:text-2xl font-bold text-white">KES 1,245,000</div>
               <div className="text-xs text-gray-400">Total Revenue</div>
               <div className="mt-2 space-y-1">
                 <div className="flex items-center gap-2 text-xs">
@@ -237,7 +237,7 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Recent Listings */}
         <Card className="bg-oxford-900 border border-gray-800 shadow-none">
           <CardHeader>

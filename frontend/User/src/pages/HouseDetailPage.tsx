@@ -23,8 +23,7 @@ import {
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
-import { Input } from '../components/ui/Input'; // Only used for review modal, not for search bar
-import { Modal } from '../components/ui/Modal';
+import { Input } from '../components/ui/Input'; 
 import { useStore } from '../store/useStore';
 import { apiService } from '../services/api';
 
@@ -44,8 +43,8 @@ export const HouseDetailPage: React.FC = () => {
 
   const [hoveredImgIdx, setHoveredImgIdx] = useState<number | null>(null);
   const [mainImgIdx, setMainImgIdx] = useState(0);
-  // Modal state for Write Review
-  const [showReviewModal, setShowReviewModal] = useState(false);
+  // Review popup state (inline, not Modal)
+  const [showReviewPopup, setShowReviewPopup] = useState(false);
   const [reviewName, setReviewName] = useState('');
   const [reviewText, setReviewText] = useState('');
   const [reviewRating, setReviewRating] = useState(0);
@@ -98,7 +97,7 @@ export const HouseDetailPage: React.FC = () => {
         comment: reviewText,
         rating: reviewRating,
       });
-      setShowReviewModal(false);
+  setShowReviewPopup(false);
       setReviewName('');
       setReviewText('');
       setReviewRating(0);
@@ -284,7 +283,12 @@ export const HouseDetailPage: React.FC = () => {
               )}
               <Badge variant="outline">
                 <Star className="h-3 w-3 mr-1 fill-current text-yellow-500" />
-                {currentHouse.rating.toFixed(1)} ({currentHouse.reviews.length} reviews)
+                {reviews.length > 0
+                  ? (
+                      (reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length).toFixed(1)
+                    )
+                  : '0.0'}
+                ({reviews.length} review{reviews.length === 1 ? '' : 's'})
               </Badge>
               <Badge variant="outline">
                 Safety: {currentHouse.safetyRating}/5
@@ -512,60 +516,70 @@ export const HouseDetailPage: React.FC = () => {
                 </Button>
               )}
               {/* Removed Schedule Visit and Report Issue buttons */}
-              <Button variant="gradient" className="w-full mt-2" onClick={() => setShowReviewModal(true)}>
+              <Button variant="gradient" className="w-full mt-2" onClick={() => setShowReviewPopup(true)}>
                 Write Review
               </Button>
             </CardContent>
           </Card>
 
-          {/* Write Review Modal */}
-          <Modal isOpen={showReviewModal} onClose={() => setShowReviewModal(false)}>
-            <form onSubmit={handleSubmitReview} className="space-y-5 animate-fadeIn">
-              <h2 className="text-xl font-bold text-center mb-2">Write a Review</h2>
-              <div>
-                <label className="block text-sm font-medium mb-1">Your Name</label>
-                <Input
-                  value={reviewName}
-                  onChange={e => setReviewName(e.target.value)}
-                  placeholder="Enter your name"
-                  disabled={submitting}
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Your Review</label>
-                <textarea
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 min-h-[80px]"
-                  value={reviewText}
-                  onChange={e => setReviewText(e.target.value)}
-                  placeholder="Share your experience..."
-                  disabled={submitting}
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Rating</label>
-                <div className="flex gap-1">
-                  {[1,2,3,4,5].map(star => (
-                    <button
-                      type="button"
-                      key={star}
-                      className={`transition-all ${star <= reviewRating ? 'text-yellow-400 scale-110' : 'text-gray-300'} hover:scale-125`}
-                      onClick={() => setReviewRating(star)}
-                      disabled={submitting}
-                      aria-label={`Rate ${star} star${star > 1 ? 's' : ''}`}
-                    >
-                      <Star className="h-7 w-7" />
-                    </button>
-                  ))}
+          {/* Write Review Popup (inline, not Modal) */}
+          {showReviewPopup && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+              <form
+                onSubmit={handleSubmitReview}
+                className="w-full max-w-md mx-auto space-y-6 bg-background p-6 rounded-lg shadow animate-fadeIn border border-primary/20"
+              >
+                <h2 className="text-xl font-bold text-center">Write a Review</h2>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Your Name</label>
+                  <Input
+                    value={reviewName}
+                    onChange={e => setReviewName(e.target.value)}
+                    placeholder="Enter your name"
+                    required
+                    disabled={submitting}
+                  />
                 </div>
-              </div>
-              {errorMsg && <p className="text-destructive text-sm text-center">{errorMsg}</p>}
-              <Button type="submit" className="w-full" disabled={submitting}>
-                {submitting ? 'Submitting...' : 'Submit Review'}
-              </Button>
-            </form>
-          </Modal>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Your Review</label>
+                  <textarea
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm min-h-[80px]"
+                    value={reviewText}
+                    onChange={e => setReviewText(e.target.value)}
+                    placeholder="Share your experience..."
+                    required
+                    disabled={submitting}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Rating</label>
+                  <div className="flex gap-1">
+                    {[1,2,3,4,5].map(star => (
+                      <button
+                        type="button"
+                        key={star}
+                        className={`transition-all ${star <= reviewRating ? 'text-yellow-400 scale-110' : 'text-gray-300'} hover:scale-125`}
+                        onClick={() => setReviewRating(star)}
+                        disabled={submitting}
+                        aria-label={`Rate ${star} star${star > 1 ? 's' : ''}`}
+                      >
+                        <Star className="h-7 w-7" />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                {errorMsg && <p className="text-destructive text-sm text-center">{errorMsg}</p>}
+                <div className="flex gap-2">
+                  <Button type="submit" className="flex-1" disabled={submitting}>
+                    {submitting ? 'Submitting...' : 'Submit Review'}
+                  </Button>
+                  <Button type="button" className="flex-1" variant="ghost" onClick={() => setShowReviewPopup(false)} disabled={submitting}>
+                    Cancel
+                  </Button>
+                </div>
+              </form>
+            </div>
+          )}
 
           {/* Quick Stats */}
           <Card>

@@ -1,3 +1,21 @@
+// Forum types
+export interface ForumReply {
+  id: string;
+  content: string;
+  author: string;
+  timestamp: Date;
+}
+
+export interface ForumPost {
+  id: string;
+  title: string;
+  category: string;
+  content: string;
+  author: string;
+  timestamp: Date;
+  replies: ForumReply[];
+  likes: string[]; // userIds who liked
+}
 // Core type definitions for the application
 
 export interface House {
@@ -12,6 +30,7 @@ export interface House {
   status: 'vacant' | 'occupied';
   rating: number;
   reviews: Review[];
+  reviewCount?: number; // Optional count of reviews from external source
   verification: VerificationStatus;
   safetyRating: number;
   createdAt: Date;

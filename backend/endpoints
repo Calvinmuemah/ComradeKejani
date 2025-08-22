@@ -27,9 +27,9 @@
 // PUT Update a review by its id ====/api/v1/reviews/review/:reviewId
 // DELETE a review by its id ====/api/v1/reviews/review/:reviewId
 // GET the 5 most recent reviews across all houses ====//api/v1/reviews/recent
-// *****
 // ai recomendations based on the houses with the most reviews
 // GET the top reviewed house ====//api/v1/reviews/top
+
 
 // notifications
 // POST create a notification ====/api/v1/notifications/create

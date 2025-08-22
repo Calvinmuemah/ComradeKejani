@@ -167,15 +167,15 @@ export const HouseCard: React.FC<HouseCardProps> = ({ house, showCompareButton =
             <div className="flex items-center gap-1">
               <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
               <span className="text-sm font-medium">
-                {typeof house.rating === 'number' && !isNaN(house.rating) ? house.rating.toFixed(1) : 'N/A'}
+                {typeof house.rating === 'number' && !isNaN(house.rating) ? house.rating.toFixed(1) : '0.0'}
               </span>
             </div>
             <span className="text-xs text-muted-foreground">
-              ({house.reviews?.length ?? 0} review{house.reviews?.length !== 1 ? 's' : ''})
+              ({house.reviewCount || house.reviews?.length || 0} {(house.reviewCount || house.reviews?.length || 0) !== 1 ? 'reviews' : 'review'})
             </span>
             <div className="flex items-center gap-1 ml-auto">
               <Shield className="h-4 w-4" />
-              <span className="text-sm">{typeof house.safetyRating === 'number' && !isNaN(house.safetyRating) ? house.safetyRating : 'N/A'}/5</span>
+              <span className="text-sm">{typeof house.safetyRating === 'number' && !isNaN(house.safetyRating) ? house.safetyRating : '0'}/5</span>
             </div>
           </div>
 

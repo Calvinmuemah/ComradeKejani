@@ -1,3 +1,5 @@
+  // Reviews endpoints
+// Removed duplicate misplaced getAllReviews function
 import { 
   House, 
   SearchFilters, 
@@ -7,6 +9,12 @@ import {
   AIRecommendation,
   UserPreferences 
 } from '../types';
+import {
+  ForumPostResponse,
+  ForumReplyResponse,
+  HouseResponse,
+  ReviewResponse
+} from '../types/api';
 import { 
   dummyHouses, 
   dummyPriceTrends, 
@@ -25,6 +33,76 @@ import {
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 class ApiService {
+  // Report Issue endpoint
+  async submitReportIssue(report: { description: string; type: string }): Promise<{ success: boolean }> {
+    const res = await fetch('https://comradekejani-k015.onrender.com/api/v1/reports/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(report),
+    });
+    if (!res.ok) throw new Error('Failed to submit report');
+    return { success: true };
+  }
+  // Forum endpoints
+  async getForumPosts() {
+    const res = await fetch('https://comradekejani-k015.onrender.com/api/v1/forums/getAll');
+    if (!res.ok) throw new Error('Failed to fetch forum posts');
+    const data = await res.json();
+    return Array.isArray(data)
+      ? data.map((p: ForumPostResponse) => ({ 
+          ...p, 
+          timestamp: new Date(p.timestamp), 
+          replies: (p.replies || []).map((r: ForumReplyResponse) => ({ 
+            ...r, 
+            timestamp: new Date(r.timestamp) 
+          })) 
+        }))
+      : [];
+  }
+
+  async createForumPost(post: { title: string; category: string; content: string; author: string; }) {
+    const res = await fetch('https://comradekejani-k015.onrender.com/api/v1/forums/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(post),
+    });
+    if (!res.ok) throw new Error('Failed to create forum post');
+    return await res.json();
+  }
+
+  async getForumPostById(postId: string) {
+    const res = await fetch(`https://comradekejani-k015.onrender.com/api/v1/forums/${postId}`);
+    if (!res.ok) throw new Error('Failed to fetch forum post');
+    const data = await res.json();
+    return { 
+      ...data, 
+      timestamp: new Date(data.timestamp), 
+      replies: (data.replies || []).map((r: ForumReplyResponse) => ({ 
+        ...r, 
+        timestamp: new Date(r.timestamp) 
+      })) 
+    };
+  }
+
+  async replyToForumPost(postId: string, reply: { content: string; author: string; }) {
+    const res = await fetch(`https://comradekejani-k015.onrender.com/api/v1/forums/${postId}/reply`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(reply),
+    });
+    if (!res.ok) throw new Error('Failed to reply to forum post');
+    return await res.json();
+  }
+
+  async likeForumPost(postId: string, userId: string) {
+    const res = await fetch(`https://comradekejani-k015.onrender.com/api/v1/forums/${postId}/like`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId }),
+    });
+    if (!res.ok) throw new Error('Failed to like forum post');
+    return await res.json();
+  }
   // Authentication endpoints
   async login(credentials: { email: string; password: string }) {
     await delay(1000);
@@ -32,7 +110,7 @@ class ApiService {
     return { success: true, token: 'dummy-token', user: { id: '1', email: credentials.email } };
   }
 
-  async register(_: { name: string; email: string; password: string; phone: string }) {
+  async register() {
     await delay(1000);
     // TODO: Replace with real registration
     return { success: true, message: 'Registration successful' };
@@ -51,43 +129,71 @@ class ApiService {
     }
     // Map backend _id to id and landlord fields if needed
     const BASE_URL = 'https://comradekejani-k015.onrender.com';
-    return houses.map((house: Record<string, unknown>) => ({
+    return houses.map((house: HouseResponse) => ({
       ...house,
-      id: (house as any)._id,
-      images: Array.isArray((house as any).images)
-        ? (house as any).images.map((img: string) =>
+      id: house._id,
+      type: house.type as unknown as House['type'],
+      location: {
+        ...house.location,
+        nearbyEssentials: house.location.nearbyEssentials.map(place => ({
+          ...place,
+          type: place.type as unknown as House['location']['nearbyEssentials'][0]['type']
+        }))
+      },
+      images: Array.isArray(house.images)
+        ? house.images.map((img: string) =>
             img.startsWith('/uploads/') ? `${BASE_URL}${img}` : img
           )
         : [],
+      reviews: Array.isArray(house.reviews)
+        ? house.reviews.map(review => ({
+            ...review,
+            createdAt: new Date(review.createdAt)
+          }))
+        : [],
       landlord: {
-        ...(house as any).landlord,
-        name: (house as any).landlord?.name || '',
-        phone: (house as any).landlord?.phone || '',
-        email: (house as any).landlord?.email || '',
-        verified: (house as any).landlord?.verified || false,
-        rating: (house as any).landlord?.rating || 0,
+        ...house.landlord,
+        name: house.landlord?.name || '',
+        phone: house.landlord?.phone || '',
+        email: house.landlord?.email || '',
+        verified: house.landlord?.verified || false,
+        rating: house.landlord?.rating || 0,
       },
       verification: {
-        verified: (house as any).landlord?.verified || false,
+        verified: house.landlord?.verified || false,
         badges: [],
       },
-      createdAt: new Date((house as any).createdAt),
-      updatedAt: new Date((house as any).updatedAt),
+      createdAt: new Date(house.createdAt),
+      updatedAt: new Date(house.updatedAt),
     }));
   }
 
   async getHouseById(id: string): Promise<House | null> {
     const response = await fetch(`https://comradekejani-k015.onrender.com/api/v1/houses/house/${id}`);
     if (!response.ok) throw new Error('Failed to fetch house');
-    const house = await response.json();
+    const house: HouseResponse = await response.json();
     const BASE_URL = 'https://comradekejani-k015.onrender.com';
     return {
       ...house,
       id: house._id,
+      type: house.type as unknown as House['type'],
+      location: {
+        ...house.location,
+        nearbyEssentials: house.location.nearbyEssentials.map(place => ({
+          ...place,
+          type: place.type as unknown as House['location']['nearbyEssentials'][0]['type']
+        }))
+      },
       images: Array.isArray(house.images)
         ? house.images.map((img: string) =>
             img.startsWith('/uploads/') ? `${BASE_URL}${img}` : img
           )
+        : [],
+      reviews: Array.isArray(house.reviews)
+        ? house.reviews.map(review => ({
+            ...review,
+            createdAt: new Date(review.createdAt)
+          }))
         : [],
       landlord: {
         ...house.landlord,
@@ -112,15 +218,17 @@ class ApiService {
     return dummyHouses.slice(0, 2); // Mock favorites
   }
 
-  async addToFavorites(_: string): Promise<{ success: boolean }> {
+  async addToFavorites(houseId: string): Promise<{ success: boolean }> {
     await delay(400);
-    // TODO: Replace with real API call
+    // TODO: Replace with real API call using houseId
+    console.log(`Adding house ${houseId} to favorites`);
     return { success: true };
   }
 
-  async removeFromFavorites(_: string): Promise<{ success: boolean }> {
+  async removeFromFavorites(houseId: string): Promise<{ success: boolean }> {
     await delay(400);
-    // TODO: Replace with real API call
+    // TODO: Replace with real API call using houseId
+    console.log(`Removing house ${houseId} from favorites`);
     return { success: true };
   }
 
@@ -135,15 +243,17 @@ class ApiService {
     );
   }
 
-  async getAIRecommendations(_: UserPreferences | undefined = undefined): Promise<AIRecommendation[]> {
+  async getAIRecommendations(preferences: UserPreferences | undefined = undefined): Promise<AIRecommendation[]> {
     await delay(1000);
-    // TODO: Replace with real AI API
+    // TODO: Replace with real AI API using preferences
+    console.log('Fetching AI recommendations with preferences:', preferences);
     return dummyAIRecommendations;
   }
 
-  async submitAIFeedback(_: string, __: boolean): Promise<{ success: boolean }> {
+  async submitAIFeedback(recommendationId: string, wasHelpful: boolean): Promise<{ success: boolean }> {
     await delay(300);
-    // TODO: Replace with real API call
+    // TODO: Replace with real API call using recommendationId and wasHelpful
+    console.log(`Submitting feedback for recommendation ${recommendationId}: ${wasHelpful ? 'helpful' : 'not helpful'}`);
     return { success: true };
   }
 
@@ -179,20 +289,44 @@ class ApiService {
     return dummyNotifications;
   }
 
-  async markNotificationAsRead(_: string): Promise<{ success: boolean }> {
+  async markNotificationAsRead(notificationId: string): Promise<{ success: boolean }> {
     await delay(300);
-    // TODO: Replace with real API call
+    // TODO: Replace with real API call using notificationId
+    console.log(`Marking notification ${notificationId} as read`);
     return { success: true };
   }
 
 
   // Reviews endpoints
+    async getRecentReviews() {
+      const res = await fetch('https://comradekejani-k015.onrender.com/api/v1/reviews/recent');
+      if (!res.ok) throw new Error('Failed to fetch recent reviews');
+      const data = await res.json();
+      return Array.isArray(data)
+        ? data.map((r: ReviewResponse) => ({ ...r, createdAt: new Date(r.createdAt) }))
+        : [];
+    }
+    
+  async getAllReviews() {
+    try {
+      const res = await fetch('https://comradekejani-k015.onrender.com/api/v1/reviews/recent?limit=100');
+      if (!res.ok) throw new Error('Failed to fetch all reviews');
+      const data = await res.json();
+      return Array.isArray(data)
+        ? data.map((r: ReviewResponse) => ({ ...r, createdAt: new Date(r.createdAt) }))
+        : [];
+    } catch (error) {
+      console.error('Error fetching all reviews:', error);
+      return [];
+    }
+  }
+    
   async getReviewsByHouseId(houseId: string) {
     const res = await fetch(`https://comradekejani-k015.onrender.com/api/v1/reviews/house/${houseId}`);
     if (!res.ok) throw new Error('Failed to fetch reviews');
     const data = await res.json();
     return Array.isArray(data)
-      ? data.map(r => ({ ...r, createdAt: new Date(r.createdAt) }))
+      ? data.map((r: ReviewResponse) => ({ ...r, createdAt: new Date(r.createdAt) }))
       : [];
   }
 
@@ -214,9 +348,10 @@ class ApiService {
   }
 
   // Contact and inquiries
-  async contactLandlord(houseId: string, _: string): Promise<{ success: boolean; houseId: string }> {
+  async contactLandlord(houseId: string, message: string): Promise<{ success: boolean; houseId: string }> {
     await delay(600);
-    // TODO: Replace with real API call
+    // TODO: Replace with real API call using houseId and message
+    console.log(`Contacting landlord for house ${houseId} with message: ${message}`);
     return { success: true, houseId };
   }
 

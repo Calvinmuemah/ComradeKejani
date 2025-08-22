@@ -2,21 +2,148 @@ import React, { useEffect, useState } from 'react';
 import { TrendingUp, MapPin, Shield, Star } from 'lucide-react';
 import { HouseCard } from '../components/HouseCard';
 // import { SearchFilters } from '../components/SearchFilters';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
+import { Card, CardContent } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 import { useStore } from '../store/useStore';
+import { apiService } from '../services/api';
+import { House } from '../types';
+
+interface Review {
+  _id: string;
+  houseId: string;
+  userName: string;
+  rating: number;
+  comment: string;
+  createdAt: string;
+  __v: number;
+  // Add missing properties to match the House.reviews type
+  id: string;
+  userId: string;
+  helpful: number;
+}
 
 export const HomePage: React.FC = () => {
   const { houses, loading, error, fetchHouses, searchResults, searchQuery } = useStore();
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [recentReviews, setRecentReviews] = useState<Review[]>([]);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
 
   useEffect(() => {
     fetchHouses();
+    
+  // Fetch ALL reviews to properly calculate ratings
+  const fetchAllReviews = async () => {
+    setReviewsLoading(true);
+    try {
+      // Get all reviews instead of just recent ones
+      const reviews = await apiService.getAllReviews();
+      
+      // Define a type for the API review response
+      type APIReview = {
+        _id?: string;
+        id?: string;
+        houseId?: string;
+        userName?: string;
+        rating?: number;
+        comment?: string;
+        createdAt?: Date | string;
+        __v?: number;
+        userId?: string;
+        helpful?: number;
+      };
+      
+      // Create properly typed reviews
+      const typedReviews: Review[] = reviews.map((apiReview: APIReview) => ({
+        _id: apiReview._id || '',
+        id: apiReview._id || '',
+        houseId: apiReview.houseId || '',
+        userName: apiReview.userName || '',
+        rating: apiReview.rating || 0,
+        comment: apiReview.comment || '',
+        createdAt: apiReview.createdAt ? apiReview.createdAt.toString() : new Date().toString(),
+        __v: apiReview.__v || 0,
+        userId: apiReview.userId || 'unknown',
+        helpful: apiReview.helpful || 0
+      }));
+      
+      setRecentReviews(typedReviews);
+    } catch (error) {
+      console.error('Error fetching reviews:', error);
+    } finally {
+      setReviewsLoading(false);
+    }
+  };    fetchAllReviews();
   }, [fetchHouses]);
 
-  const displayHouses = searchQuery ? searchResults : houses;
-  const featuredHouses = houses.filter(house => house.verification.verified).slice(0, 6);
+  // Calculate reviews for each house
+  const assignReviewsToHouses = (houses: House[], reviews: Review[]) => {
+    // Create a map of houseId to reviews
+    const reviewsByHouse: { [key: string]: Review[] } = {};
+
+    // Group reviews by houseId
+    reviews.forEach(review => {
+      const houseId = review.houseId;
+      if (houseId) {
+        if (!reviewsByHouse[houseId]) {
+          reviewsByHouse[houseId] = [];
+        }
+        reviewsByHouse[houseId].push(review);
+      }
+    });
+
+    // Define the expected format for reviews in the House interface
+    type HouseReview = {
+      id: string;
+      userId: string;
+      userName: string;
+      rating: number;
+      comment: string;
+      createdAt: Date;
+      helpful: number;
+    };
+
+    // Assign reviews and calculate ratings for houses
+    return houses.map(house => {
+      const houseReviews = reviewsByHouse[house.id] || [];
+      const reviewCount = houseReviews.length;
+
+      // Calculate average rating if there are reviews
+      let avgRating = 0;
+      if (reviewCount > 0) {
+        avgRating = houseReviews.reduce((sum, review) => sum + review.rating, 0) / reviewCount;
+      }
+
+      // Convert reviews to the format expected by the House interface
+      const convertedReviews: HouseReview[] = houseReviews.map(review => ({
+        id: review.id,
+        userId: review.userId,
+        userName: review.userName,
+        rating: review.rating,
+        comment: review.comment,
+        createdAt: new Date(review.createdAt),
+        helpful: review.helpful
+      }));
+
+      // Create a type-safe house object with the properly formatted reviews
+      const houseWithReviews: House = {
+        ...house,
+        reviews: convertedReviews,
+        reviewCount: reviewCount,
+        rating: avgRating || house.rating || 0
+      };
+
+      return houseWithReviews;
+    });
+  };
+
+  const displayHouses = searchQuery 
+    ? assignReviewsToHouses(searchResults, recentReviews) 
+    : assignReviewsToHouses(houses, recentReviews);
+  const featuredHouses = assignReviewsToHouses(
+    houses.filter(house => house.verification.verified).slice(0, 6),
+    recentReviews
+  );
   const trendingEstates = ['Amalemba', 'Kefinco', 'Maraba'];
 
   if (loading) {
@@ -78,11 +205,25 @@ export const HomePage: React.FC = () => {
         <Card>
           <CardContent className="p-4 text-center">
             <div className="text-2xl font-bold text-yellow-500">
-              {houses.length > 0
-                ? Math.round(houses.reduce((acc, h) => acc + h.rating, 0) / houses.length * 10) / 10
-                : 'N/A'}
+              {reviewsLoading ? (
+                <span className="animate-pulse">...</span>
+              ) : recentReviews.length > 0 ? (
+                (recentReviews.reduce((acc, r) => acc + r.rating, 0) / recentReviews.length).toFixed(1)
+              ) : (
+                'N/A'
+              )}
             </div>
             <div className="text-sm text-muted-foreground">Average Rating</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 text-center">
+            <div className="text-2xl font-bold text-blue-500">
+              {reviewsLoading ? 
+                <span className="animate-pulse">...</span> : 
+                recentReviews.length}
+            </div>
+            <div className="text-sm text-muted-foreground">Total Reviews</div>
           </CardContent>
         </Card>
         <Card>
@@ -163,46 +304,7 @@ export const HomePage: React.FC = () => {
             {displayHouses.map((house) => (
               <HouseCard key={house.id} house={house} />
             ))}
-            {/* Demo: Add more placeholder cards for visual density */}
-            {[...Array(4)].map((_, i) => (
-              <HouseCard key={`placeholder-${i}`} house={{
-                id: `placeholder-${i}`,
-                title: `Demo House ${i+1}`,
-                price: 10000 + i * 1000,
-                type: 'single',
-                rating: 4.2,
-                reviews: [],
-                verification: {
-                  verified: i % 2 === 0,
-                  badges: [],
-                },
-                status: 'vacant',
-                images: [
-                  // Use real house images for demo cards
-                  'https://images.pexels.com/photos/1571460/pexels-photo-1571460.jpeg?auto=compress&cs=tinysrgb&w=800',
-                  'https://images.pexels.com/photos/1457842/pexels-photo-1457842.jpeg?auto=compress&cs=tinysrgb&w=800',
-                  'https://images.pexels.com/photos/271624/pexels-photo-271624.jpeg?auto=compress&cs=tinysrgb&w=800',
-                  'https://images.pexels.com/photos/1457847/pexels-photo-1457847.jpeg?auto=compress&cs=tinysrgb&w=800',
-                ].slice(i, i+1),
-                location: {
-                  estate: 'Demo Estate',
-                  address: 'Demo Address',
-                  coordinates: { lat: 0, lng: 0 },
-                  distanceFromUniversity: { walking: 10, boda: 5, matatu: 3 },
-                  nearbyEssentials: []
-                },
-                amenities: [],
-                landlord: {
-                  name: 'Demo Landlord',
-                  phone: '0700000000',
-                  verified: true,
-                  rating: 4.5
-                },
-                safetyRating: 4.5,
-                createdAt: new Date(),
-                updatedAt: new Date()
-              }} />
-            ))}
+            {/* Removed Demo House placeholder cards */}
           </div>
         )}
       </section>

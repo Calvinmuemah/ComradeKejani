@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const reviewsController = require('../controllers/reviewController');
+const reviewController = require('../controllers/aiRecomendations');
 const reviews = require('../models/reviews');
 
 // Create a review
@@ -13,6 +14,8 @@ router.put('/review/:reviewId', reviewsController.updateReview);
 router.delete('/review/:reviewId', reviewsController.deleteReview);
 // Get the 5 most recent reviews across all houses
 router.get('/recent', reviewsController.getRecentReviews);
+// ai recomendations based on the houses with the most reviews
+router.get('/top', reviewController.getTopReviewedHouses);
 
 module.exports = router;
 
@@ -23,3 +26,4 @@ module.exports = router;
 // /api/v1/reviews/review/:reviewId
 // /api/v1/reviews/review/:reviewId
 // /api/v1/reviews/recent
+// api/v1/reviews/top

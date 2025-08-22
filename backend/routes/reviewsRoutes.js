@@ -11,6 +11,8 @@ router.get('/house/:houseId', reviewsController.getReviewsByHouse);
 router.put('/review/:reviewId', reviewsController.updateReview);
 // Delete a review
 router.delete('/review/:reviewId', reviewsController.deleteReview);
+// Get the 5 most recent reviews across all houses
+router.get('/recent', reviewsController.getRecentReviews);
 
 module.exports = router;
 
@@ -20,3 +22,4 @@ module.exports = router;
 // /api/v1/reviews/house/:houseId
 // /api/v1/reviews/review/:reviewId
 // /api/v1/reviews/review/:reviewId
+// /api/v1/reviews/recent

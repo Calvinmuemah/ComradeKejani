@@ -51,3 +51,16 @@ exports.deleteReview = async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 };
+
+// Get the 5 most recent reviews across all houses
+exports.getRecentReviews = async (req, res) => {
+    try {
+        const reviews = await Review.find()
+            .sort({ createdAt: -1 }) // sort by newest first
+            .limit(5);               // limit to 5 results
+        res.status(200).json(reviews);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+

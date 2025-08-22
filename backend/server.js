@@ -35,6 +35,7 @@ app.use('/api/v1/upload', require('./routes/apload'));
 app.use('/api/v1/reviews', require('./routes/reviewsRoutes'));
 app.use('/api/v1/notifications', require('./routes/notificationsRoutes'));
 app.use('/api/v1/reports', require('./routes/reportIssueRoutes'));
+app.use('/api/v1/forum', require('./routes/forumRoutes'));
 
 app.use(errorHandler);
 

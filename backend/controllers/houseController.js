@@ -2,7 +2,6 @@ const House = require('../models/House');
 const Landlord = require('../models/landLord');
 
 // Create House
-// Create House
 exports.createHouse = async (req, res) => {
   try {
     const { title, price, type, location, amenities, landlordId, status } = req.body;
@@ -19,16 +18,9 @@ exports.createHouse = async (req, res) => {
       : req.body.images || [];
 
     const house = new House({
-      title,
-      price,
-      type,
-      location,
-      images,
-      amenities,
-      landlord: landlordId,
-      status
+      title, price, type, location, images, amenities, landlord: landlordId, status
     });
-
+    // Save the house
     await house.save();
     res.status(201).json(house);
   } catch (err) {

@@ -26,9 +26,43 @@
 // GET all reviews of a certain house by houseId ====/api/v1/reviews/house/:houseId
 // PUT Update a review by its id ====/api/v1/reviews/review/:reviewId
 // DELETE a review by its id ====/api/v1/reviews/review/:reviewId
+// GET the 5 most recent reviews across all houses ====//api/v1/reviews/recent
 
 // notifications
 // POST create a notification ====/api/v1/notifications/create
 // GET all notifications ====/api/v1/notifications/getAll
 // PUT a notification by ID ====/api/v1/notifications/updateNotification/:id
 // DELETE a notification by ID ====/api/v1/notifications/deleteNotification/:id
+
+// report issues
+// POST create a report ====api/v1/reports/create
+// GET all report issues ====api/v1/reports/getAll
+
+
+// Forum routes
+
+// Create a new forum post
+// POST /api/v1/forums/create
+// Body: { title, category, content, author }
+// Response: Newly created forum post object
+
+// Get all forum posts
+// GET /api/v1/forums/getAll
+// Response: Array of forum posts with replies and likes
+
+// Get a single forum post by ID
+// GET /api/v1/forums/:postId
+// Response: Forum post object with replies and likes
+
+// Reply to a forum post
+// POST /api/v1/forums/:postId/reply
+// Body: { content, author }
+// Response: Updated forum post object with the new reply
+
+// Like or unlike a forum post
+// POST /api/v1/forums/:postId/like
+// Body: { userId }
+// Response: Updated forum post object with likes array updated
+
+
+

@@ -1,89 +1,76 @@
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 const SafetyIssue = require('../models/reportIssue');
+require("dotenv").config();
 
-const fetch = require('node-fetch');
+// Initialize Gemini client
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
+// AI verification function with multilingual support
 async function verifyIssueWithAI(description) {
-    try {
-        const apiKey = process.env.GEMINI_API_KEY; // ensure this is set in .env
-        const url = 'https://gemini.googleapis.com/v1/models/gemini-flash:predict';
+  try {
+    const systemPrompt = `
+You are a safety officer AI. Determine if a user report is a valid safety issue.
+The text may be in English, Kiswahili, or Sheng.
+Answer ONLY "YES" if the report is appropriate, neutral, and does NOT contain offensive language, nonsense, or spam.
+Answer "NO" otherwise.
+Example of valid Kiswahili report: "Kila kitu iko sawa"
+Example of valid Sheng report: "Sasa bro, place iko fresh"
+`;
 
-        const body = {
-            instances: [
-                {
-                    content: `Please check if this report is a valid safety issue and does NOT contain offensive language or nonsense: "${description}". Respond with "VALID" if ok, "INVALID" if inappropriate.`
-                }
-            ]
-        };
+    const userPrompt = `Report: "${description}"`;
 
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${apiKey}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(body)
-        });
+    const result = await model.generateContent([systemPrompt, userPrompt]);
+    const responseText = result.response.text().trim();
 
-        const data = await response.json();
+    console.log("Gemini AI raw output:", responseText);
 
-        // Example: checking the AI output
-        const aiOutput = data.predictions?.[0]?.content || '';
+    return responseText.toUpperCase().startsWith("YES");
 
-        // Return true if AI says "VALID", false if "INVALID"
-        return aiOutput.toUpperCase().includes('VALID');
-
-    } catch (err) {
-        console.error('Gemini AI verification error:', err);
-        // Default to false if AI fails
-        return false;
-    }
+  } catch (err) {
+    console.error("Gemini AI verification error:", err);
+    return true; // allow submission if AI fails
+  }
 }
 
 
 // Create a safety issue
 exports.createSafetyIssue = async (req, res) => {
-    try {
-        const { userId, description, type } = req.body;
+  try {
+    const { description, type } = req.body;
 
-        if (!description || !userId) {
-            return res.status(400).json({ error: 'User ID and description are required.' });
-        }
-
-        // AI verification
-        const isValid = await verifyIssueWithAI(description);
-
-        if (!isValid) {
-            return res.status(400).json({ 
-                error: 'Your report could not be submitted as it contains inappropriate content. Please rephrase politely.' 
-            });
-        }
-
-        const issue = new SafetyIssue({
-            userId,
-            description,
-            type,
-            verified: true
-        });
-
-        await issue.save();
-
-        res.status(201).json(issue);
-
-    } catch (err) {
-        res.status(500).json({ error: err.message });
+    if (!description) {
+      return res.status(400).json({ error: "Description is required." });
     }
+
+    const isValid = await verifyIssueWithAI(description);
+
+    if (!isValid) {
+      return res.status(400).json({
+        error: "Your report could not be submitted as it contains inappropriate content. Please rephrase politely."
+      });
+    }
+
+    const issue = new SafetyIssue({
+      description,
+      type: type || "safety",
+      verified: true
+    });
+
+    await issue.save();
+    res.status(201).json(issue);
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 };
 
-// Get all safety issues (admin or for logs)
+// Get all safety issues
 exports.getSafetyIssues = async (req, res) => {
-    try {
-        const issues = await SafetyIssue.find()
-            .populate('userId', 'name email') // optional: include user info
-            .sort({ createdAt: -1 });
-
-        res.status(200).json(issues);
-
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
+  try {
+    const issues = await SafetyIssue.find().sort({ createdAt: -1 });
+    res.status(200).json(issues);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 };

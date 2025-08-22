@@ -8,13 +8,21 @@ import {
   Shield,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
-import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 // ...existing code...
 import { useStore } from '../store/useStore';
 
 export const InsightsPage: React.FC = () => {
   const { houses, loading } = useStore();
+
+  // Sample data for popularEstates (replace with real data as needed)
+  const popularEstates = [
+    { name: 'Westlands', averageRent: 25000 },
+    { name: 'Kilimani', averageRent: 30000 },
+    { name: 'Rongai', averageRent: 15000 },
+    { name: 'Kasarani', averageRent: 18000 },
+    { name: 'Ngong Road', averageRent: 22000 },
+  ];
   // Removed unused selectedEstate state
   const [selectedTimeframe, setSelectedTimeframe] = useState<'1M' | '3M' | '6M' | '1Y'>('3M');
 

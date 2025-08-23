@@ -1,40 +1,140 @@
 import React, { useEffect, useState } from 'react';
-import { MapPin, Filter, List } from 'lucide-react';
+import { MapPin, Filter, List, X, Navigation as NavigationIcon, Car, Bus, User } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { useStore } from '../store/useStore';
+import { House } from '../types';
+import { useNavigate } from 'react-router-dom';
+
+// Center coordinates for MMUST Library
+const MMUST_LIBRARY = {
+  lat: 0.290482,
+  lng: 34.7640097,
+  name: "MMUST Main Library"
+};
+
+// CSS for map animations
+const mapAnimations = `
+  @keyframes pulse {
+    0% {
+      box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
+    }
+    70% {
+      box-shadow: 0 0 0 10px rgba(59, 130, 246, 0);
+    }
+    100% {
+      box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+    }
+  }
+
+  @keyframes bounce {
+    0%, 100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-5px);
+    }
+  }
+
+  .pin-pulse {
+    animation: pulse 1.5s infinite;
+  }
+
+  .pin-bounce {
+    animation: bounce 1s ease infinite;
+  }
+`;
 
 export const MapPage: React.FC = () => {
+  const navigate = useNavigate();
   const { houses, loading, fetchHouses, favorites, addToFavorites, removeFromFavorites } = useStore();
   const [selectedHouse, setSelectedHouse] = useState<string | null>(null);
+  const [showRouteToSelected, setShowRouteToSelected] = useState(false);
+  const [transportMode, setTransportMode] = useState<'walking' | 'driving' | 'transit'>('walking');
+  const [animatingPin, setAnimatingPin] = useState<string | null>(null);
 
   useEffect(() => {
     fetchHouses();
+    
+    // Add map animations CSS to document head
+    const styleElement = document.createElement('style');
+    styleElement.textContent = mapAnimations;
+    document.head.appendChild(styleElement);
+    
+    // Clean up style element on unmount
+    return () => {
+      document.head.removeChild(styleElement);
+    };
   }, [fetchHouses]);
 
   const isFavorite = (id: string) => favorites && favorites.some(h => h.id === id);
 
+  // Calculate position for map pins based on their coordinates
+  const getHousePinStyle = (house: House) => {
+    if (!house.location || !house.location.coordinates) {
+      return { display: 'none' }; // Hide if no coordinates
+    }
+    
+    // These calculations position the pins based on their distance from the map center
+    // This is a simplified calculation that works with the iframe overlay approach
+    const latDiff = (house.location.coordinates.lat - MMUST_LIBRARY.lat) * 500;
+    const lngDiff = (house.location.coordinates.lng - MMUST_LIBRARY.lng) * 500;
+    
+    // Calculate percentage position on the map (center is 50%,50%)
+    const left = 50 + lngDiff;
+    const top = 50 - latDiff;
+    
+    // Ensure the pins are within the visible area (5% to 95% of container)
+    const clampedLeft = Math.min(Math.max(left, 5), 95);
+    const clampedTop = Math.min(Math.max(top, 5), 95);
+    
+    return {
+      left: `${clampedLeft}%`,
+      top: `${clampedTop}%`
+    };
+  };
+
+  // Function to view a selected house on the map
+  const viewHouseOnMap = (houseId: string) => {
+    const house = houses.find(h => h.id === houseId);
+    if (house && house.location && house.location.coordinates) {
+      // First set the animating pin for a nice effect
+      setAnimatingPin(houseId);
+      
+      // After a small delay, select the house and show route
+      setTimeout(() => {
+        setSelectedHouse(houseId);
+        setShowRouteToSelected(true);
+        setAnimatingPin(null);
+      }, 300);
+    }
+  };
+
   if (loading) {
     return (
-      <div className="flex-1 flex items-center justify-center min-h-screen">
-        <div className="animate-pulse text-center">
-          <div className="h-8 w-48 bg-muted rounded mx-auto" />
-          <div className="h-4 w-64 bg-muted rounded mx-auto mt-2" />
+      <div className="min-h-screen bg-oxford-900 flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="relative w-16 h-16 mx-auto">
+            <div className="absolute inset-0 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+            <MapPin className="w-8 h-8 text-primary absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
+          </div>
+          <p className="text-lg font-medium text-blue-100">Loading map and properties...</p>
+          <p className="text-sm text-muted-foreground">Gathering the best student housing around MMUST</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-oxford-900">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-3xl font-bold text-foreground mb-2">
+          <h1 className="text-3xl font-bold text-blue-100 mb-2">
             Interactive Map View
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-blue-200">
             Explore student houses around Masinde Muliro University
           </p>
         </div>
@@ -56,35 +156,127 @@ export const MapPage: React.FC = () => {
                 </div>
               </CardHeader>
               <CardContent className="p-0 h-[calc(100%-80px)]">
-                {/* Map Placeholder - In real implementation, use Google Maps or Mapbox */}
+                {/* Real Google Maps implementation */}
                 <div className="relative h-full bg-muted rounded-lg overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center">
-                    <div className="text-center">
-                      <MapPin className="w-16 h-16 text-primary mx-auto mb-4" />
-                      <h3 className="text-xl font-semibold text-foreground mb-2">
-                        Interactive Map
-                      </h3>
-                      <p className="text-muted-foreground">
-                        {houses.length} houses available
-                      </p>
-                    </div>
+                  {/* Google Maps iframe */}
+                  <iframe
+                    title="Properties Map"
+                    className="w-full h-full border-0"
+                    src={`https://www.google.com/maps/embed/v1/${selectedHouse && showRouteToSelected ? 'directions' : 'place'}?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8${
+                      selectedHouse && showRouteToSelected 
+                      ? `&origin=0.290482,34.7640097&destination=${
+                          houses.find(h => h.id === selectedHouse)?.location?.coordinates
+                          ? `${houses.find(h => h.id === selectedHouse)?.location?.coordinates.lat},${houses.find(h => h.id === selectedHouse)?.location?.coordinates.lng}`
+                          : `${houses.find(h => h.id === selectedHouse)?.location?.estate || 'MMUST+Kakamega'}`
+                        }&mode=${transportMode}&avoid=highways&units=metric` 
+                      : `&q=MMUST+Library+Kisumu+Kakamega+Road&center=0.290482,34.7640097`
+                    }&zoom=${selectedHouse ? '16' : '15'}`}
+                    onLoad={() => {}}
+                    frameBorder="0"
+                    scrolling="no"
+                    marginHeight={0}
+                    marginWidth={0}
+                    loading="lazy"
+                    style={{filter: 'grayscale(0%) contrast(1.2)'}}
+                  />
+                  
+                  {/* Map Pin Overlays */}
+                  <div className="absolute inset-0 pointer-events-none">
+                    {houses.filter(house => house.location && house.location.coordinates).map((house) => (
+                      <div
+                        key={house.id}
+                        className={`absolute w-10 h-10 bg-gradient-to-br from-primary to-primary/80 rounded-full border-2 border-white shadow-lg cursor-pointer transition-all duration-300 flex items-center justify-center pointer-events-auto
+                        ${selectedHouse === house.id ? 'ring-4 ring-primary/50 scale-125 z-20 pin-pulse' : ''}
+                        ${animatingPin === house.id ? 'scale-150 z-30 ring-2 ring-primary pin-bounce' : ''}
+                        ${!selectedHouse && !animatingPin ? 'hover:scale-110 hover:z-10' : 'hover:scale-105'}
+                        `}
+                        style={getHousePinStyle(house)}
+                        onClick={() => viewHouseOnMap(house.id)}
+                      >
+                        <div className="w-full h-full flex flex-col items-center justify-center">
+                          <span className="text-xs font-bold text-white">
+                            {Math.floor(house.price / 1000)}k
+                          </span>
+                          {selectedHouse === house.id && (
+                            <span className="absolute -bottom-5 whitespace-nowrap bg-black/70 text-white text-[10px] px-1 rounded">
+                              {house.location.distanceFromUniversity.walking}min walk
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                  {/* Mock Map Pins */}
-                  {houses.slice(0, 6).map((house, index) => (
-                    <div
-                      key={house.id}
-                      className="absolute w-8 h-8 bg-primary rounded-full border-2 border-white shadow-lg cursor-pointer hover:scale-110 transition-transform flex items-center justify-center"
-                      style={{
-                        left: `${20 + index * 12}%`,
-                        top: `${30 + (index % 3) * 20}%`
+
+                  {/* Map Controls */}
+                  <div className="absolute bottom-4 right-4 space-y-2">
+                    <Button 
+                      size="sm" 
+                      variant="secondary" 
+                      className="w-8 h-8 p-0 rounded-full shadow-lg bg-white hover:bg-gray-100"
+                      onClick={() => {
+                        setSelectedHouse(null);
+                        setShowRouteToSelected(false);
                       }}
-                      onClick={() => setSelectedHouse(house.id)}
+                      title="Return to MMUST Library"
                     >
-                      <span className="text-xs font-bold text-white">
-                        {Math.floor(house.price / 1000)}k
-                      </span>
-                    </div>
-                  ))}
+                      <MapPin className="h-4 w-4 text-primary" />
+                    </Button>
+                    {selectedHouse && (
+                      <>
+                        <Button 
+                          size="sm" 
+                          variant="secondary" 
+                          className="w-8 h-8 p-0 rounded-full shadow-lg bg-white hover:bg-gray-100"
+                          onClick={() => setSelectedHouse(null)}
+                          title="Deselect house"
+                        >
+                          <X className="h-4 w-4 text-primary" />
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant={showRouteToSelected ? "default" : "secondary"} 
+                          className={`w-8 h-8 p-0 rounded-full shadow-lg ${showRouteToSelected ? 'bg-primary hover:bg-primary/90' : 'bg-white hover:bg-gray-100'}`}
+                          onClick={() => setShowRouteToSelected(!showRouteToSelected)}
+                          title={showRouteToSelected ? "Hide route" : "Show route from MMUST Library"}
+                        >
+                          <NavigationIcon className={`h-4 w-4 ${showRouteToSelected ? 'text-white' : 'text-primary'}`} />
+                        </Button>
+                        
+                        {/* Transport mode buttons - only show if route is visible */}
+                        {showRouteToSelected && (
+                          <div className="mt-1 flex flex-col gap-1 bg-white/80 p-1 rounded-lg shadow-lg">
+                                                          <Button
+                              size="sm"
+                              variant={transportMode === 'walking' ? "default" : "secondary"}
+                              className={`w-8 h-8 p-0 rounded-full ${transportMode === 'walking' ? 'bg-primary hover:bg-primary/90' : ''}`}
+                              onClick={() => setTransportMode('walking')}
+                              title="Walking directions"
+                            >
+                              <User className={`h-4 w-4 ${transportMode === 'walking' ? 'text-white' : 'text-primary'}`} />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant={transportMode === 'driving' ? "default" : "secondary"}
+                              className={`w-8 h-8 p-0 rounded-full ${transportMode === 'driving' ? 'bg-primary hover:bg-primary/90' : ''}`}
+                              onClick={() => setTransportMode('driving')}
+                              title="Driving directions"
+                            >
+                              <Car className={`h-4 w-4 ${transportMode === 'driving' ? 'text-white' : 'text-primary'}`} />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant={transportMode === 'transit' ? "default" : "secondary"}
+                              className={`w-8 h-8 p-0 rounded-full ${transportMode === 'transit' ? 'bg-primary hover:bg-primary/90' : ''}`}
+                              onClick={() => setTransportMode('transit')}
+                              title="Public transit directions"
+                            >
+                              <Bus className={`h-4 w-4 ${transportMode === 'transit' ? 'text-white' : 'text-primary'}`} />
+                            </Button>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -120,7 +312,8 @@ export const MapPage: React.FC = () => {
                         <h3 className="font-semibold text-lg text-foreground">
                           {house.title}
                         </h3>
-                        <p className="text-muted-foreground text-sm">
+                        <p className="text-muted-foreground text-sm flex items-center gap-1">
+                          <MapPin className="w-3 h-3" />
                           {house.location?.estate} • {house.location?.distanceFromUniversity?.walking}min walk
                         </p>
                       </div>
@@ -167,9 +360,84 @@ export const MapPage: React.FC = () => {
                         >
                           {isFavorite(house.id) ? 'Saved' : 'Save'}
                         </Button>
-                        <Button variant="outline" className="flex-1">
-                          Contact
+                        <Button 
+                          variant="outline" 
+                          className="flex-1"
+                          onClick={() => navigate(`/houses/${house.id}`)}
+                        >
+                          View Details
                         </Button>
+                      </div>
+                      <div className="mt-2">
+                        <Button 
+                          variant={showRouteToSelected ? "default" : "outline"}
+                          className={`w-full flex items-center justify-center gap-2 ${showRouteToSelected ? 'bg-primary hover:bg-primary/90' : 'text-primary border-primary/50 hover:bg-primary/5'}`}
+                          onClick={() => setShowRouteToSelected(!showRouteToSelected)}
+                        >
+                          <NavigationIcon className={`w-4 h-4 ${showRouteToSelected ? 'text-white' : 'text-primary'}`} />
+                          {showRouteToSelected ? (
+                            <span className="font-medium">Hide Route</span>
+                          ) : (
+                            <span className="font-medium">Show Route from MMUST</span>
+                          )}
+                        </Button>
+                        {showRouteToSelected && (
+                          <div className="mt-2 space-y-1">
+                            <div className="flex items-center justify-between text-xs bg-primary/10 p-2 rounded">
+                              <div className="flex items-center">
+                                <User className="h-3 w-3 mr-1 text-primary" />
+                                <span className="text-primary font-medium">Walking</span>
+                              </div>
+                              <Badge variant="outline" className={`text-xs ${transportMode === 'walking' ? 'bg-primary/20 border-primary text-primary' : ''}`}>
+                                {house.location?.distanceFromUniversity?.walking || '--'} min
+                              </Badge>
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="h-6 text-xs text-primary hover:text-primary/80 hover:bg-primary/10" 
+                                onClick={() => setTransportMode('walking')}
+                              >
+                                Select
+                              </Button>
+                            </div>
+                            
+                            <div className="flex items-center justify-between text-xs bg-primary/10 p-2 rounded">
+                              <div className="flex items-center">
+                                <Car className="h-3 w-3 mr-1 text-primary" />
+                                <span className="text-primary font-medium">Driving</span>
+                              </div>
+                              <Badge variant="outline" className={`text-xs ${transportMode === 'driving' ? 'bg-primary/20 border-primary text-primary' : ''}`}>
+                                {Math.max(1, Math.floor(house.location?.distanceFromUniversity?.walking / 4))} min
+                              </Badge>
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="h-6 text-xs text-primary hover:text-primary/80 hover:bg-primary/10" 
+                                onClick={() => setTransportMode('driving')}
+                              >
+                                Select
+                              </Button>
+                            </div>
+                            
+                            <div className="flex items-center justify-between text-xs bg-primary/10 p-2 rounded">
+                              <div className="flex items-center">
+                                <Bus className="h-3 w-3 mr-1 text-primary" />
+                                <span className="text-primary font-medium">Transit</span>
+                              </div>
+                              <Badge variant="outline" className={`text-xs ${transportMode === 'transit' ? 'bg-primary/20 border-primary text-primary' : ''}`}>
+                                {house.location?.distanceFromUniversity?.matatu || '--'} min
+                              </Badge>
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="h-6 text-xs text-primary hover:text-primary/80 hover:bg-primary/10" 
+                                onClick={() => setTransportMode('transit')}
+                              >
+                                Select
+                              </Button>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   );

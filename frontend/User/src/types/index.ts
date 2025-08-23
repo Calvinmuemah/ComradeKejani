@@ -21,18 +21,54 @@ export interface ForumPost {
 export interface House {
   id: string;
   title: string;
+  description: string;
   price: number;
-  type: HouseType;
-  location: Location;
   images: string[];
-  amenities: Amenity[];
-  landlord: Landlord;
+  type: string;
+  location: {
+    estate: string;
+    address: string;
+    coordinates: {
+      lat: number;
+      lng: number;
+    };
+    distanceFromUniversity: {
+      walking: number;
+      boda: number;
+      matatu: number;
+    };
+  };
+  amenities: {
+    name: string;
+    icon: string;
+    available: boolean;
+  }[];
+  landlord: {
+    id: string;
+    name: string;
+    phone: string;
+    email?: string;
+    rating: number;
+    verified: boolean;
+  };
   status: 'vacant' | 'occupied';
-  rating: number;
-  reviews: Review[];
-  reviewCount?: number; // Optional count of reviews from external source
-  verification: VerificationStatus;
+  verification: {
+    verified: boolean;
+    verifiedBy: string;
+    verifiedDate: Date;
+  };
   safetyRating: number;
+  reviews?: {
+    id: string;
+    userId: string;
+    userName: string;
+    rating: number;
+    comment: string;
+    createdAt: Date;
+    helpful: number;
+  }[];
+  reviewCount?: number;
+  rating?: number;
   createdAt: Date;
   updatedAt: Date;
 }

@@ -65,7 +65,11 @@ export const HouseCard: React.FC<HouseCardProps> = ({ house, showCompareButton =
   };
 
   return (
-    <Card className="group overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1 max-w-sm w-full mx-auto card-glow" onClick={onClick} style={onClick ? { cursor: 'pointer' } : {}}>
+    <Card 
+      className="group overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1 max-w-sm w-full mx-auto card-glow" 
+      onClick={onClick} 
+      style={onClick ? { cursor: 'pointer' } : {}}
+    >
       <div className="relative">
         <Link to={`/house/${house.id}`} tabIndex={-1}>
           <img
@@ -149,12 +153,12 @@ export const HouseCard: React.FC<HouseCardProps> = ({ house, showCompareButton =
               <p className="font-bold text-xl text-primary">
                 KSh {typeof house.price === 'number' && !isNaN(house.price) ? house.price.toLocaleString() : 'N/A'}
               </p>
-              <p className="text-xs text-muted-foreground">per month</p>
+              <p className="text-xs text-blue-200">per month</p>
             </div>
           </div>
 
           {/* Location */}
-          <div className="flex items-center gap-2 text-muted-foreground">
+          <div className="flex items-center gap-2 text-blue-200">
             <MapPin className="h-4 w-4" />
             <span className="text-sm">{house.location?.estate || 'Unknown'}</span>
             <span className="text-xs">
@@ -170,7 +174,7 @@ export const HouseCard: React.FC<HouseCardProps> = ({ house, showCompareButton =
                 {typeof house.rating === 'number' && !isNaN(house.rating) ? house.rating.toFixed(1) : '0.0'}
               </span>
             </div>
-            <span className="text-xs text-muted-foreground">
+            <span className="text-xs text-blue-200">
               ({house.reviewCount || house.reviews?.length || 0} {(house.reviewCount || house.reviews?.length || 0) !== 1 ? 'reviews' : 'review'})
             </span>
             <div className="flex items-center gap-1 ml-auto">
@@ -184,14 +188,14 @@ export const HouseCard: React.FC<HouseCardProps> = ({ house, showCompareButton =
             {house.amenities?.filter(a => a.available).slice(0, 4).map((amenity) => {
               const Icon = getAmenityIcon(amenity.icon);
               return (
-                <div key={amenity.name} className="flex items-center gap-1 text-xs text-muted-foreground">
+                <div key={amenity.name} className="flex items-center gap-1 text-xs text-blue-200">
                   <Icon className="h-3 w-3" />
                   <span>{amenity.name}</span>
                 </div>
               );
             })}
             {house.amenities?.filter(a => a.available).length > 4 && (
-              <span className="text-xs text-muted-foreground">
+              <span className="text-xs text-blue-200">
                 +{house.amenities.filter(a => a.available).length - 4} more
               </span>
             )}

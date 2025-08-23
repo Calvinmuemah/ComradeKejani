@@ -1,17 +1,7 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { useState, useEffect, ReactNode } from 'react';
 import { User, UserRole, Permission } from '../types';
 import { API_ENDPOINTS, storeAuthToken, clearAuthSession } from '../lib/api';
-
-interface AuthContextType {
-  user: User | null;
-  isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  logout: () => void;
-  hasPermission: (permission: Permission) => boolean;
-  hasRole: (role: UserRole) => boolean;
-}
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+import { AuthContext, AuthContextType } from './AuthContextStore';
 
 // Remove mockUsers. Use real API.
 
@@ -31,7 +21,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           // Parse the saved user
           const parsedUser = JSON.parse(savedUser);
           setUser(parsedUser);
-        } catch (_error) {
+        } catch {
           // If there's an error parsing the user data, clear the session
           clearAuthSession();
         }
@@ -89,7 +79,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         createdAt: new Date().toISOString(),
         permissions: Object.values(Permission),
       }));
-    } catch (error: any) {
+    } catch (error: unknown) {
       setIsLoading(false);
       throw error;
     }
@@ -123,12 +113,4 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       {children}
     </AuthContext.Provider>
   );
-};
-
-export const useAuth = (): AuthContextType => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
 };

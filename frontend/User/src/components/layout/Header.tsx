@@ -10,6 +10,7 @@ import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { useStore } from '../../store/useStore';
 import { useTheme } from '../../contexts/ThemeContext';
+import { AnimatedBorderTab } from '../ui/AnimatedBorderTab';
 
 export const Header: React.FC = () => {
   const { houses, searchFilters, setSearchFilters, searchHouses } = useStore();
@@ -37,7 +38,7 @@ export const Header: React.FC = () => {
     setSearchFilters({
       priceRange: selectedPrice,
       estate: selectedLocations,
-  houseTypes: selectedTypes as any, // HouseType[]
+      houseTypes: selectedTypes as any, // HouseType[]
     });
     searchHouses();
     setShowFilterModal(false);
@@ -69,68 +70,38 @@ export const Header: React.FC = () => {
             </Link>
 
             <nav className="hidden md:flex items-center gap-2">
-              <Link
-                to="/"
-                className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                  isActive('/')
-                    ? 'bg-primary/10 text-primary border border-primary/20'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-surface-hover'
-                }`}
-              >
-                Houses
-              </Link>
-              <Link
-                to="/map"
-                className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                  isActive('/map')
-                    ? 'bg-primary/10 text-primary border border-primary/20'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-surface-hover'
-                }`}
-              >
-                Map View
-              </Link>
-              <Link
-                to="/insights"
-                className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                  isActive('/insights')
-                    ? 'bg-primary/10 text-primary border border-primary/20'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-surface-hover'
-                }`}
-              >
-                Insights
-              </Link>
-              <Link
-                to="/community"
-                className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                  isActive('/community')
-                    ? 'bg-primary/10 text-primary border border-primary/20'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-surface-hover'
-                }`}
-              >
-                Community
-              </Link>
-              <Link
-                to="/safety"
-                className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                  isActive('/safety')
-                    ? 'bg-primary/10 text-primary border border-primary/20'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-surface-hover'
-                }`}
-              >
-                Safety
-              </Link>
+              {/* Using AnimatedBorderTab for "Houses" tab */}
+              <AnimatedBorderTab isSelected={isActive('/')} className="text-sm font-medium transition-all duration-200">
+                <Link to="/" className="flex items-center space-x-2">Houses</Link>
+              </AnimatedBorderTab>
+              
+              {/* Using AnimatedBorderTab for "Map View" tab */}
+              <AnimatedBorderTab isSelected={isActive('/map')} className="text-sm font-medium transition-all duration-200">
+                <Link to="/map" className="flex items-center space-x-2">Map View</Link>
+              </AnimatedBorderTab>
+              
+              {/* Using AnimatedBorderTab for "Insights" tab */}
+              <AnimatedBorderTab isSelected={isActive('/insights')} className="text-sm font-medium transition-all duration-200">
+                <Link to="/insights" className="flex items-center space-x-2">Insights</Link>
+              </AnimatedBorderTab>
+              
+              {/* Using AnimatedBorderTab for "Community" tab */}
+              <AnimatedBorderTab isSelected={isActive('/community')} className="text-sm font-medium transition-all duration-200">
+                <Link to="/community" className="flex items-center space-x-2">Community</Link>
+              </AnimatedBorderTab>
+              
+              {/* Using AnimatedBorderTab for "Safety" tab */}
+              <AnimatedBorderTab isSelected={isActive('/safety')} className="text-sm font-medium transition-all duration-200">
+                <Link to="/safety" className="flex items-center space-x-2">Safety</Link>
+              </AnimatedBorderTab>
+              
               {/* Compare tab, only show if compareList has items */}
               {compareList && compareList.length > 0 && (
-                <Link
-                  to="/compare"
-                  className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 animate-fadeIn ${
-                    isActive('/compare')
-                      ? 'bg-primary/10 text-primary border border-primary/20'
-                      : 'text-primary bg-gradient-to-r from-blue-100 to-purple-100 border border-primary/10 hover:bg-primary/10 hover:text-primary'
-                  }`}
-                >
-                  Compare ({compareList.length})
-                </Link>
+                <AnimatedBorderTab isSelected={isActive('/compare')} className="text-sm font-medium transition-all duration-200">
+                  <Link to="/compare" className="flex items-center space-x-2">
+                    Compare ({compareList.length})
+                  </Link>
+                </AnimatedBorderTab>
               )}
             </nav>
           </div>
@@ -176,9 +147,6 @@ export const Header: React.FC = () => {
                 )}
               </Button>
             </Link>
-
-
-
 
             {/* Theme Toggle Button */}
             <Button variant="ghost" size="icon" onClick={toggleTheme} aria-label="Toggle theme">

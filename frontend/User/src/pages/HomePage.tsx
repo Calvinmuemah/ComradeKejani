@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { TrendingUp, MapPin, Shield, Star } from 'lucide-react';
 import { HouseCard } from '../components/HouseCard';
 // import { SearchFilters } from '../components/SearchFilters';
@@ -27,14 +27,10 @@ export const HomePage: React.FC = () => {
   const { houses, loading, error, fetchHouses, searchResults, searchQuery } = useStore();
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [recentReviews, setRecentReviews] = useState<Review[]>([]);
-  const [reviewsLoading, setReviewsLoading] = useState(false);
+  const refreshTimerRef = useRef<number | null>(null);
 
-  useEffect(() => {
-    fetchHouses();
-    
-  // Fetch ALL reviews to properly calculate ratings
+  // Function to fetch all reviews
   const fetchAllReviews = async () => {
-    setReviewsLoading(true);
     try {
       // Get all reviews instead of just recent ones
       const reviews = await apiService.getAllReviews();
@@ -70,11 +66,67 @@ export const HomePage: React.FC = () => {
       setRecentReviews(typedReviews);
     } catch (error) {
       console.error('Error fetching reviews:', error);
-    } finally {
-      setReviewsLoading(false);
     }
-  };    fetchAllReviews();
-  }, [fetchHouses]);
+  };
+  
+  // Custom function to fetch houses without showing loading state
+  const fetchHousesSilently = async () => {
+    try {
+      const houses = await apiService.getHouses(undefined);
+      // Update houses in store without changing loading state
+      useStore.setState({ houses });
+    } catch (error) {
+      console.error('Error fetching houses silently:', error);
+    }
+  };
+  
+  // Function to refresh data in the background
+  const refreshDataSilently = async () => {
+    try {
+      // Fetch new data in the background without any UI indicators
+      const [newHouses] = await Promise.all([
+        apiService.getHouses(undefined),
+        fetchAllReviews()
+      ]);
+      
+      // Make sure we don't disrupt the UI by updating houses only if we have new data
+      if (newHouses && newHouses.length > 0) {
+        // Update the store without changing loading state
+        useStore.setState({ houses: newHouses });
+      }
+    } catch (error) {
+      console.error('Error in background refresh:', error);
+    }
+  };
+
+  // Initial data load and set up background refresh
+  useEffect(() => {
+    // Initial data load without showing loading state
+    Promise.all([
+      fetchHousesSilently(),
+      fetchAllReviews()
+    ]);
+    
+    // Set up background refresh timer (every 5 seconds)
+    // Delay the first refresh by 1 second to ensure initial load is complete
+    const initialTimeout = setTimeout(() => {
+      refreshDataSilently();
+      
+      // Then set up the regular interval
+      refreshTimerRef.current = window.setInterval(() => {
+        refreshDataSilently();
+      }, 5000);
+    }, 1000);
+    
+    // Clean up timer on component unmount
+    return () => {
+      clearTimeout(initialTimeout);
+      if (refreshTimerRef.current !== null) {
+        clearInterval(refreshTimerRef.current);
+      }
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Calculate reviews for each house
   const assignReviewsToHouses = (houses: House[], reviews: Review[]) => {
@@ -146,9 +198,10 @@ export const HomePage: React.FC = () => {
   );
   const trendingEstates = ['Amalemba', 'Kefinco', 'Maraba'];
 
-  if (loading) {
+  // Skip loading screen for background refreshes - only show on first load when there are no houses
+  if (loading && houses.length === 0) {
     return (
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8 bg-oxford-900">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[...Array(6)].map((_, i) => (
             <div key={i} className="h-80 bg-muted rounded-lg animate-pulse" />
@@ -160,7 +213,7 @@ export const HomePage: React.FC = () => {
 
   if (error) {
     return (
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8 bg-oxford-900">
         <div className="text-center">
           <p className="text-destructive">{error}</p>
           <Button onClick={() => fetchHouses()} className="mt-4">
@@ -172,26 +225,23 @@ export const HomePage: React.FC = () => {
   }
 
   return (
-  <div className="py-8 px-4 md:px-8 space-y-8 animate-fadeIn">
+  <div className="py-8 px-4 md:px-8 space-y-8 animate-fadeIn bg-oxford-900">
       {/* Hero Section */}
   <div className="text-center space-y-4 py-12 bg-gradient-to-r from-blue-500/10 to-purple-600/10 rounded-2xl animate-fadeIn delay-100">
   <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent transition-all duration-500 hover:scale-105">
           Find Your Perfect Student Home
         </h1>
-        <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-          Discover verified, affordable housing near Masinde Muliro University with smart recommendations powered by AI.
+                <p className="text-xl text-blue-200 max-w-2xl mx-auto">
+          Find the perfect student accommodation near Masinde Muliro University
         </p>
       </div>
-
-      {/* Search Section */}
-    {/* Search Section removed as per request; use header search bar only */}
 
       {/* Quick Stats */}
   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 animate-fadeIn delay-200">
         <Card>
           <CardContent className="p-4 text-center">
             <div className="text-2xl font-bold text-primary">{houses.length}</div>
-            <div className="text-sm text-muted-foreground">Available Houses</div>
+            <div className="text-sm text-blue-200">Available Houses</div>
           </CardContent>
         </Card>
         <Card>
@@ -199,31 +249,26 @@ export const HomePage: React.FC = () => {
             <div className="text-2xl font-bold text-green-500">
               {houses.filter(h => h.verification.verified).length}
             </div>
-            <div className="text-sm text-muted-foreground">Verified Properties</div>
+            <div className="text-sm text-blue-200">Verified Properties</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
             <div className="text-2xl font-bold text-yellow-500">
-              {reviewsLoading ? (
-                <span className="animate-pulse">...</span>
-              ) : recentReviews.length > 0 ? (
-                (recentReviews.reduce((acc, r) => acc + r.rating, 0) / recentReviews.length).toFixed(1)
-              ) : (
-                'N/A'
-              )}
+              {recentReviews.length > 0 
+                ? (recentReviews.reduce((acc, r) => acc + r.rating, 0) / recentReviews.length).toFixed(1)
+                : 'N/A'
+              }
             </div>
-            <div className="text-sm text-muted-foreground">Average Rating</div>
+            <div className="text-sm text-blue-200">Average Rating</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
             <div className="text-2xl font-bold text-blue-500">
-              {reviewsLoading ? 
-                <span className="animate-pulse">...</span> : 
-                recentReviews.length}
+              {recentReviews.length}
             </div>
-            <div className="text-sm text-muted-foreground">Total Reviews</div>
+            <div className="text-sm text-blue-200">Total Reviews</div>
           </CardContent>
         </Card>
         <Card>
@@ -233,7 +278,7 @@ export const HomePage: React.FC = () => {
                 ? `KSh ${Math.round(houses.reduce((acc, h) => acc + h.price, 0) / houses.length).toLocaleString()}`
                 : 'N/A'}
             </div>
-            <div className="text-sm text-muted-foreground">Average Rent</div>
+            <div className="text-sm text-blue-200">Average Rent</div>
           </CardContent>
         </Card>
       </div>
@@ -288,7 +333,7 @@ export const HomePage: React.FC = () => {
 
         {displayHouses.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-muted-foreground text-lg">
+            <p className="text-blue-200 text-lg">
               {searchQuery ? 'No houses found matching your search.' : 'No houses available.'}
             </p>
             <Button

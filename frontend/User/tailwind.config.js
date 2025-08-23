@@ -12,6 +12,22 @@ export default {
     },
     extend: {
       colors: {
+        oxford: {
+          900: '#000A17', // Oxford Blue from Admin side
+          800: '#0a2e5c',
+          700: '#13396d',
+        },
+        blue: {
+          100: '#dbeafe',
+          200: '#bfdbfe',
+          300: '#93c5fd',
+          400: '#60a5fa',
+          500: '#3b82f6',
+          600: '#2563eb',
+          700: '#1d4ed8',
+          800: '#1e40af',
+          900: '#1e3a8a',
+        },
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
         ring: 'hsl(var(--ring))',

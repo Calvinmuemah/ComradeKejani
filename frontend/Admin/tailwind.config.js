@@ -26,9 +26,14 @@ export default {
           '0%': { opacity: 0, transform: 'translateX(-30px)' },
           '100%': { opacity: 1, transform: 'translateX(0)' },
         },
+        'sidebar-toggle': {
+          '0%': { transform: 'translateX(-100%)' },
+          '100%': { transform: 'translateX(0)' },
+        }
       },
       animation: {
         'sidebar-glass': 'sidebar-glass 0.7s cubic-bezier(0.4,0,0.2,1) both',
+        'sidebar-toggle': 'sidebar-toggle 0.3s ease-in-out forwards'
       },
     },
   },

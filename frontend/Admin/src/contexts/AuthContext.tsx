@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, UserRole, Permission } from '../types';
-import { API_ENDPOINTS, storeAuthToken } from '../lib/api';
+import { API_ENDPOINTS, storeAuthToken, clearAuthSession } from '../lib/api';
 
 interface AuthContextType {
   user: User | null;
@@ -20,16 +20,26 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check for existing session
-    const savedUser = localStorage.getItem('kejani_admin_user');
-    if (savedUser) {
-      try {
-        setUser(JSON.parse(savedUser));
-      } catch (error) {
-        localStorage.removeItem('kejani_admin_user');
+    // Function to check for existing session
+    const checkSession = async () => {
+      setIsLoading(true);
+      const savedUser = sessionStorage.getItem('kejani_admin_user');
+      const token = sessionStorage.getItem('authToken');
+      
+      if (savedUser && token) {
+        try {
+          // Parse the saved user
+          const parsedUser = JSON.parse(savedUser);
+          setUser(parsedUser);
+        } catch (_error) {
+          // If there's an error parsing the user data, clear the session
+          clearAuthSession();
+        }
       }
-    }
-    setIsLoading(false);
+      setIsLoading(false);
+    };
+    
+    checkSession();
   }, []);
 
   const login = async (email: string, password: string): Promise<void> => {
@@ -70,7 +80,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         createdAt: new Date().toISOString(),
         permissions: Object.values(Permission),
       });
-      localStorage.setItem('kejani_admin_user', JSON.stringify({
+      sessionStorage.setItem('kejani_admin_user', JSON.stringify({
         id: '',
         email,
         name: '',
@@ -88,7 +98,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const logout = () => {
     setUser(null);
-    localStorage.removeItem('kejani_admin_user');
+    clearAuthSession();
   };
 
   const hasPermission = (permission: Permission): boolean => {

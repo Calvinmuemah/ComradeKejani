@@ -56,20 +56,20 @@ const LoginPage: React.FC = () => {
         </div>
       )}
       <div
-        className="min-h-screen w-full flex items-center justify-end bg-cover bg-center relative"
+        className="min-h-screen w-full flex items-center justify-center md:justify-end bg-cover bg-center relative"
         style={{ backgroundImage: 'url(/background.jpeg)' }}
       >
         <div className="absolute inset-0 bg-black/90" />
-      <div className="relative z-10 flex flex-col items-end justify-center h-full pr-[25rem] w-full">
+      <div className="relative z-10 flex flex-col items-center md:items-end justify-center h-full px-4 md:px-8 lg:pr-[15rem] xl:pr-[25rem] w-full">
         <div className="w-full max-w-sm bg-transparent border-0 shadow-none relative">
-          <div className="p-8 relative z-10 bg-transparent rounded-2xl">
-            <div className="mb-8 flex justify-center">
+          <div className="p-4 sm:p-8 relative z-10 bg-transparent rounded-2xl">
+            <div className="mb-6 sm:mb-8 flex justify-center">
               <div className="h-16 w-16 overflow-hidden rounded-lg">
                 <img src="/johnny.png" alt="Logo" className="h-full w-full object-cover" />
               </div>
             </div>
-            <h2 className="text-3xl font-bold text-white mb-8 text-center">Log in to your account</h2>
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <h2 className="text-2xl sm:text-3xl font-bold text-white mb-6 sm:mb-8 text-center">Welcome Back, Login To Your Account</h2>
+            <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
               <div className="space-y-2">
                 <div className="relative mt-2">
                   <input
@@ -78,7 +78,7 @@ const LoginPage: React.FC = () => {
                     value={formData.email}
                     onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
                     required
-                    className="peer block w-full h-12 px-4 pt-4 bg-transparent border border-gray-700 rounded-lg text-white focus:outline-none focus:border-[#0270ff] focus:shadow-[0_0_8px_2px_#0270ff99] transition-all"
+                    className="peer block w-full h-10 sm:h-12 px-4 pt-2 sm:pt-4 bg-transparent border border-gray-700 rounded-lg text-white focus:outline-none focus:border-[#0270ff] focus:shadow-[0_0_8px_2px_#0270ff99] transition-all"
                     style={{ borderWidth: '2px' }}
                   />
                   <span
@@ -108,7 +108,7 @@ const LoginPage: React.FC = () => {
                     value={formData.password}
                     onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
                     required
-                    className="peer block w-full h-12 px-4 pt-4 pr-10 bg-transparent border border-gray-700 rounded-lg text-white focus:outline-none focus:border-[#0270ff] focus:shadow-[0_0_8px_2px_#0270ff99] transition-all"
+                    className="peer block w-full h-10 sm:h-12 px-4 pt-2 sm:pt-4 pr-10 bg-transparent border border-gray-700 rounded-lg text-white focus:outline-none focus:border-[#0270ff] focus:shadow-[0_0_8px_2px_#0270ff99] transition-all"
                     style={{ borderWidth: '2px' }}
                   />
                   <span
@@ -141,7 +141,7 @@ const LoginPage: React.FC = () => {
               {error && <p className="text-sm text-red-400">{error}</p>}
               <button
                 type="submit"
-                className="w-full h-12 mt-4 bg-gradient-to-r from-[#0270ff] to-[#013a87] hover:from-[#18144F] hover:to-[#0270ff] text-white font-semibold rounded-lg shadow-[0_0_16px_2px_rgba(2,80,186,0.25)] relative overflow-hidden"
+                className="w-full h-10 sm:h-12 mt-4 bg-gradient-to-r from-[#0270ff] to-[#013a87] hover:from-[#18144F] hover:to-[#0270ff] text-white font-semibold rounded-lg shadow-[0_0_16px_2px_rgba(2,80,186,0.25)] relative overflow-hidden"
                 disabled={isLoading}
               >
                 {isLoading ? (

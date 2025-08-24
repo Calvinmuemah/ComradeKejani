@@ -6,6 +6,7 @@ import { Badge } from '../components/ui/Badge';
 import { useStore } from '../store/useStore';
 import { House } from '../types';
 import { useNavigate } from 'react-router-dom';
+import { useTheme } from '../contexts/useTheme';
 
 // Center coordinates for MMUST Library
 const MMUST_LIBRARY = {
@@ -111,15 +112,17 @@ export const MapPage: React.FC = () => {
     }
   };
 
+  const { theme } = useTheme();
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-oxford-900 flex items-center justify-center">
+      <div className={`min-h-screen flex items-center justify-center ${theme === 'dark' ? 'bg-oxford-900' : 'bg-white'}`}>
         <div className="text-center space-y-4">
           <div className="relative w-16 h-16 mx-auto">
             <div className="absolute inset-0 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
             <MapPin className="w-8 h-8 text-primary absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
           </div>
-          <p className="text-lg font-medium text-blue-100">Loading map and properties...</p>
+          <p className={`text-lg font-medium ${theme === 'dark' ? 'text-blue-100' : 'text-gray-800'}`}>Loading map and properties...</p>
           <p className="text-sm text-muted-foreground">Gathering the best student housing around MMUST</p>
         </div>
       </div>
@@ -127,22 +130,22 @@ export const MapPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-oxford-900">
+    <div className={`min-h-screen ${theme === 'dark' ? 'bg-oxford-900' : 'bg-white'}`}>
   <div className="w-full px-4 md:px-8 py-8">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-3xl font-bold text-blue-100 mb-2">
+          <h1 className={`text-3xl font-bold mb-2 ${theme === 'dark' ? 'text-blue-100' : 'text-gray-900'}`}>
             Interactive Map View
           </h1>
-          <p className="text-blue-200">
+          <p className={`${theme === 'dark' ? 'text-blue-200' : 'text-gray-600'}`}>
             Explore student houses around Masinde Muliro University
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-200px)]">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-200px)]">
           {/* Map Container */}
           <div className="lg:col-span-2">
-            <Card className="h-full">
+      <Card className="h-full">
               <CardHeader className="pb-4">
                 <div className="flex justify-between items-center">
                   <CardTitle className="flex items-center gap-2">
@@ -157,7 +160,7 @@ export const MapPage: React.FC = () => {
               </CardHeader>
               <CardContent className="p-0 h-[calc(100%-80px)]">
                 {/* Real Google Maps implementation */}
-                <div className="relative h-full bg-muted rounded-lg overflow-hidden">
+        <div className={`relative h-full rounded-lg overflow-hidden ${theme === 'dark' ? 'bg-muted' : 'bg-gray-100'}`}>
                   {/* Google Maps iframe */}
                   <iframe
                     title="Properties Map"
@@ -198,7 +201,7 @@ export const MapPage: React.FC = () => {
                             {Math.floor(house.price / 1000)}k
                           </span>
                           {selectedHouse === house.id && (
-                            <span className="absolute -bottom-5 whitespace-nowrap bg-black/70 text-white text-[10px] px-1 rounded">
+                            <span className={`absolute -bottom-5 whitespace-nowrap text-white text-[10px] px-1 rounded ${theme === 'dark' ? 'bg-black/70' : 'bg-gray-900/70'}`}>
                               {house.location.distanceFromUniversity.walking}min walk
                             </span>
                           )}
@@ -208,11 +211,11 @@ export const MapPage: React.FC = () => {
                   </div>
 
                   {/* Map Controls */}
-                  <div className="absolute bottom-4 right-4 space-y-2">
+          <div className="absolute bottom-4 right-4 space-y-2">
                     <Button 
                       size="sm" 
                       variant="secondary" 
-                      className="w-8 h-8 p-0 rounded-full shadow-lg bg-white hover:bg-gray-100"
+            className={`w-8 h-8 p-0 rounded-full shadow-lg ${theme === 'dark' ? 'bg-white hover:bg-gray-100' : 'bg-white hover:bg-gray-200'}`}
                       onClick={() => {
                         setSelectedHouse(null);
                         setShowRouteToSelected(false);
@@ -226,7 +229,7 @@ export const MapPage: React.FC = () => {
                         <Button 
                           size="sm" 
                           variant="secondary" 
-                          className="w-8 h-8 p-0 rounded-full shadow-lg bg-white hover:bg-gray-100"
+                          className={`w-8 h-8 p-0 rounded-full shadow-lg ${theme === 'dark' ? 'bg-white hover:bg-gray-100' : 'bg-white hover:bg-gray-200'}`}
                           onClick={() => setSelectedHouse(null)}
                           title="Deselect house"
                         >
@@ -235,7 +238,7 @@ export const MapPage: React.FC = () => {
                         <Button 
                           size="sm" 
                           variant={showRouteToSelected ? "default" : "secondary"} 
-                          className={`w-8 h-8 p-0 rounded-full shadow-lg ${showRouteToSelected ? 'bg-primary hover:bg-primary/90' : 'bg-white hover:bg-gray-100'}`}
+                          className={`w-8 h-8 p-0 rounded-full shadow-lg ${showRouteToSelected ? 'bg-primary hover:bg-primary/90' : theme === 'dark' ? 'bg-white hover:bg-gray-100' : 'bg-white hover:bg-gray-200'}`}
                           onClick={() => setShowRouteToSelected(!showRouteToSelected)}
                           title={showRouteToSelected ? "Hide route" : "Show route from MMUST Library"}
                         >
@@ -244,7 +247,7 @@ export const MapPage: React.FC = () => {
                         
                         {/* Transport mode buttons - only show if route is visible */}
                         {showRouteToSelected && (
-                          <div className="mt-1 flex flex-col gap-1 bg-white/80 p-1 rounded-lg shadow-lg">
+                          <div className={`mt-1 flex flex-col gap-1 p-1 rounded-lg shadow-lg ${theme === 'dark' ? 'bg-white/80' : 'bg-white/90'}`}>
                                                           <Button
                               size="sm"
                               variant={transportMode === 'walking' ? "default" : "secondary"}
@@ -371,7 +374,7 @@ export const MapPage: React.FC = () => {
                       <div className="mt-2">
                         <Button 
                           variant={showRouteToSelected ? "default" : "outline"}
-                          className={`w-full flex items-center justify-center gap-2 ${showRouteToSelected ? 'bg-primary hover:bg-primary/90' : 'text-primary border-primary/50 hover:bg-primary/5'}`}
+                          className={`w-full flex items-center justify-center gap-2 ${showRouteToSelected ? 'bg-primary hover:bg-primary/90' : theme === 'dark' ? 'text-primary border-primary/50 hover:bg-primary/5' : 'text-primary border-primary/50 hover:bg-primary/10'}`}
                           onClick={() => setShowRouteToSelected(!showRouteToSelected)}
                         >
                           <NavigationIcon className={`w-4 h-4 ${showRouteToSelected ? 'text-white' : 'text-primary'}`} />
@@ -383,7 +386,7 @@ export const MapPage: React.FC = () => {
                         </Button>
                         {showRouteToSelected && (
                           <div className="mt-2 space-y-1">
-                            <div className="flex items-center justify-between text-xs bg-primary/10 p-2 rounded">
+                            <div className={`flex items-center justify-between text-xs p-2 rounded ${theme === 'dark' ? 'bg-primary/10' : 'bg-primary/5'}`}>
                               <div className="flex items-center">
                                 <User className="h-3 w-3 mr-1 text-primary" />
                                 <span className="text-primary font-medium">Walking</span>
@@ -401,7 +404,7 @@ export const MapPage: React.FC = () => {
                               </Button>
                             </div>
                             
-                            <div className="flex items-center justify-between text-xs bg-primary/10 p-2 rounded">
+                            <div className={`flex items-center justify-between text-xs p-2 rounded ${theme === 'dark' ? 'bg-primary/10' : 'bg-primary/5'}`}>
                               <div className="flex items-center">
                                 <Car className="h-3 w-3 mr-1 text-primary" />
                                 <span className="text-primary font-medium">Driving</span>
@@ -419,7 +422,7 @@ export const MapPage: React.FC = () => {
                               </Button>
                             </div>
                             
-                            <div className="flex items-center justify-between text-xs bg-primary/10 p-2 rounded">
+                            <div className={`flex items-center justify-between text-xs p-2 rounded ${theme === 'dark' ? 'bg-primary/10' : 'bg-primary/5'}`}>
                               <div className="flex items-center">
                                 <Bus className="h-3 w-3 mr-1 text-primary" />
                                 <span className="text-primary font-medium">Transit</span>

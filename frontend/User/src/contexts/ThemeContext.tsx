@@ -14,18 +14,12 @@ const THEME_STORAGE_KEY = 'comrade-kejani-theme';
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Initialize theme from localStorage or system preference
   const [theme, setThemeState] = useState<Theme>(() => {
-    // Check for saved theme preference
+    // Always prioritize an explicit saved preference if present
     const savedTheme = localStorage.getItem(THEME_STORAGE_KEY) as Theme | null;
-    if (savedTheme && (savedTheme === 'light' || savedTheme === 'dark')) {
+    if (savedTheme === 'light' || savedTheme === 'dark') {
       return savedTheme;
     }
-    
-    // If no saved preference, check system preference
-    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      return 'dark';
-    }
-    
-    // Default to light theme
+    // Ignore system preference: default must always be light on first load
     return 'light';
   });
 

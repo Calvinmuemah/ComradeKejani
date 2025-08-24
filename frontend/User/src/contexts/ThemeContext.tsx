@@ -23,7 +23,6 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return 'light';
   });
 
-  // Apply theme class to both html and body elements
   useEffect(() => {
     // Save theme preference
     localStorage.setItem(THEME_STORAGE_KEY, theme);

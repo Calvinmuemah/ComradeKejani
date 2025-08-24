@@ -36,6 +36,8 @@ app.use('/api/v1/reviews', require('./routes/reviewsRoutes'));
 app.use('/api/v1/notifications', require('./routes/notificationsRoutes'));
 app.use('/api/v1/reports', require('./routes/reportIssueRoutes'));
 app.use('/api/v1/forums', require('./routes/forumRoutes'));
+app.use('/api/v1/house-views', require('./routes/HouseViewRoutes'));
+app.use('/api/v1/landlord-views', require('./routes/LandlordViewRoutes'));
 
 app.use(errorHandler);
 

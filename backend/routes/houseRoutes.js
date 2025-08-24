@@ -4,6 +4,7 @@ const houseController = require('../controllers/houseController');
 const multer = require('multer');
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const cloudinary = require('../config/cloudinary');
+const auth = require('../middlewares/authToken');
 
 // Configure Cloudinary storage
 const storage = new CloudinaryStorage({
@@ -16,17 +17,20 @@ const storage = new CloudinaryStorage({
 
 const upload = multer({ storage });
 
-// Create house with images
-router.post('/create', upload.array('images', 5), houseController.createHouse);
+// Admin routes (protected)
+router.post('/create', auth, upload.array('images', 5), houseController.createHouse);
+router.put('/house/:id', auth, upload.array('images', 5), houseController.updateHouse);
+router.delete('/house/:id', auth, houseController.deleteHouse);
 
-// Read
+// Public routes
 router.get('/getAll', houseController.getAllHouses);
 router.get('/house/:id', houseController.getHouseById);
 
-// Update house (images optional)
-router.put('/house/:id', upload.array('images', 5), houseController.updateHouse);
-
-// Delete
-router.delete('/house/:id', houseController.deleteHouse);
-
 module.exports = router;
+
+// house
+// /api/v1/houses/create
+// /api/v1/houses/getAll
+// /api/v1/houses/house/:id
+// /api/v1/houses/house/:id
+// /api/v1/houses/house/:id

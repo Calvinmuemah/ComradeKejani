@@ -68,4 +68,26 @@
 // Response: Updated forum post object with likes array updated
 
 
+// LandlordView Endpoints
+// POST post all LandlordViews ==== /api/v1/landlord-views/increment-view
+// body{
+//     {
+//   "landlordId": "68a8742ebc706ef2bb00f2cd"
+// }
+
+// }
+// GET all LandlordViews per landlord==== /api/v1/landlord-views/:landlordId
+
+// HouseView Endpoints
+// POST post all HouseViews ==== /api/v1/house-views/increment-view
+// body{
+//     {
+//   "houseId": "68ab10641d73ab395746daa0"
+// }
+// }
+// GET all HouseViews of a house ==== /api/v1/house-views/:houseId
+// GET all HouseViews across all houses ==== api/v1/house-views
+
+
+
 

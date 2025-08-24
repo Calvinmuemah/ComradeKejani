@@ -1,13 +1,16 @@
 const express = require('express');
 const router = express.Router();
 const landlordController = require('../controllers/landlordController');
+const auth = require('../middlewares/authToken');
 
-// Protect these routes with auth middleware if needed
-router.post('/addLandlord', landlordController.createLandlord);
+// Admin routes (protected)
+router.post('/addLandlord', auth, landlordController.createLandlord);
+router.put('/Landlord/:id', auth, landlordController.updateLandlord);
+router.delete('/Landlords/:id', auth, landlordController.deleteLandlord);
+
+// Public routes (optional, e.g., viewing landlords)
 router.get('/Landlords', landlordController.getAllLandlords);
 router.get('/Landlord/:id', landlordController.getLandlordById);
-router.put('/Landlord/:id', landlordController.updateLandlord);
-router.delete('/Landlords/:id', landlordController.deleteLandlord);
 
 module.exports = router;
 

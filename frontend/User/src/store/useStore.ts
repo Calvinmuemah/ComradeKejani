@@ -84,7 +84,7 @@ export const useStore = create<AppState>((set, get) => ({
     try {
       const houses = await apiService.getHouses(get().searchFilters);
       set({ houses, loading: false });
-    } catch (error) {
+  } catch {
       set({ error: 'Failed to fetch houses', loading: false });
     }
   },
@@ -94,7 +94,7 @@ export const useStore = create<AppState>((set, get) => ({
     try {
       const house = await apiService.getHouseById(id);
       set({ currentHouse: house, loading: false });
-    } catch (error) {
+  } catch {
       set({ error: 'Failed to fetch house details', loading: false });
     }
   },
@@ -115,7 +115,7 @@ export const useStore = create<AppState>((set, get) => ({
       const { searchQuery, searchFilters } = get();
       const results = await apiService.searchHouses(searchQuery, searchFilters);
       set({ searchResults: results, loading: false });
-    } catch (error) {
+  } catch {
       set({ error: 'Search failed', loading: false });
     }
   },
@@ -127,7 +127,7 @@ export const useStore = create<AppState>((set, get) => ({
       if (!currentFavorites.find(fav => fav.id === house.id)) {
         set({ favorites: [...currentFavorites, house] });
       }
-    } catch (error) {
+  } catch {
       set({ error: 'Failed to add to favorites' });
     }
   },
@@ -137,7 +137,7 @@ export const useStore = create<AppState>((set, get) => ({
       await apiService.removeFromFavorites(houseId);
       const currentFavorites = get().favorites;
       set({ favorites: currentFavorites.filter(fav => fav.id !== houseId) });
-    } catch (error) {
+  } catch {
       set({ error: 'Failed to remove from favorites' });
     }
   },
@@ -159,7 +159,9 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   toggleDarkMode: () => {
-    set({ darkMode: !get().darkMode });
+    const newDarkMode = !get().darkMode;
+    set({ darkMode: newDarkMode });
+    // Theme is now handled by ThemeContext
   },
 
   toggleSidebar: () => {
@@ -171,7 +173,7 @@ export const useStore = create<AppState>((set, get) => ({
       const notifications = await apiService.getNotifications();
       const unreadCount = notifications.filter(n => !n.read).length;
       set({ notifications, unreadCount });
-    } catch (error) {
+  } catch {
       set({ error: 'Failed to fetch notifications' });
     }
   },
@@ -184,16 +186,17 @@ export const useStore = create<AppState>((set, get) => ({
       );
       const unreadCount = notifications.filter(n => !n.read).length;
       set({ notifications, unreadCount });
-    } catch (error) {
+  } catch {
       set({ error: 'Failed to mark notification as read' });
     }
   },
 
   fetchAIRecommendations: async () => {
     try {
-      const recommendations = await apiService.getAIRecommendations(get().userPreferences);
+      const prefs = get().userPreferences || undefined;
+      const recommendations = await apiService.getAIRecommendations(prefs);
       set({ aiRecommendations: recommendations });
-    } catch (error) {
+  } catch {
       set({ error: 'Failed to fetch AI recommendations' });
     }
   },

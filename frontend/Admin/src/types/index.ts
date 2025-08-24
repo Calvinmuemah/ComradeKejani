@@ -22,6 +22,8 @@ export enum Permission {
   EDIT_LISTING = 'edit_listing',
   DELETE_LISTING = 'delete_listing',
   PUBLISH_LISTING = 'publish_listing',
+  BULK_IMPORT_LISTINGS = 'bulk_import_listings',
+  BULK_EXPORT_LISTINGS = 'bulk_export_listings',
   // Landlords
   MANAGE_LANDLORDS = 'manage_landlords',
   // Safety
@@ -36,6 +38,7 @@ export enum Permission {
 // Listing Types
 export interface Listing {
   id: string;
+  _id?: string; // Adding MongoDB style ID for compatibility
   title: string;
   description: string;
   houseType: HouseType;
@@ -56,6 +59,12 @@ export interface Listing {
   walkingTime: number;
   bodaTime: number;
   matatuTime: number;
+  
+  // Backward compatibility fields
+  location?: { estate?: string; };
+  type?: string;
+  price?: number;
+  views?: number;
   
   // Media
   photos: Media[];
@@ -136,6 +145,9 @@ export interface Landlord {
   verified: boolean;
   verifiedAt?: string;
   notes?: string;
+  
+  // Backward compatibility fields
+  phone?: string;
   
   // Performance Metrics
   responseRate: number;
@@ -253,7 +265,7 @@ export interface AnalyticsEvent {
   id: string;
   deviceId: string;
   type: EventType;
-  payload: Record<string, any>;
+  payload: Record<string, unknown>;
   timestamp: string;
   ip?: string;
   userAgent?: string;
@@ -298,7 +310,7 @@ export interface FeaturedBlock {
   id: string;
   title: string;
   type: BlockType;
-  items: any[];
+  items: unknown[];
   order: number;
   visible: boolean;
 }
@@ -313,7 +325,7 @@ export enum BlockType {
 export interface QuickFilter {
   id: string;
   label: string;
-  query: Record<string, any>;
+  query: Record<string, unknown>;
   order: number;
   visible: boolean;
 }
@@ -344,8 +356,8 @@ export interface AuditLog {
   action: string;
   resourceType: string;
   resourceId: string;
-  beforeValue?: any;
-  afterValue?: any;
+  beforeValue?: unknown;
+  afterValue?: unknown;
   ip: string;
   userAgent: string;
   timestamp: string;
@@ -369,8 +381,8 @@ export interface PaginatedResponse<T> {
 }
 
 // Form Types
-export interface ListingFormData extends Omit<Listing, 'id' | 'createdAt' | 'updatedAt' | 'createdBy' | 'updatedBy'> {}
+export type ListingFormData = Omit<Listing, 'id' | 'createdAt' | 'updatedAt' | 'createdBy' | 'updatedBy'>;
 
-export interface LandlordFormData extends Omit<Landlord, 'id' | 'createdAt' | 'updatedAt'> {}
+export type LandlordFormData = Omit<Landlord, 'id' | 'createdAt' | 'updatedAt'>;
 
-export interface SafetyAlertFormData extends Omit<SafetyAlert, 'id' | 'createdAt' | 'createdBy'> {}
+export type SafetyAlertFormData = Omit<SafetyAlert, 'id' | 'createdAt' | 'createdBy'>;

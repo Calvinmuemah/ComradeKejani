@@ -1,7 +1,8 @@
 
 import React, { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
-import { useAuth } from "../../contexts/AuthContext";
+import { useAuth } from "../../contexts/useAuth";
+import LoadingScreen from "../../components/ui/LoadingScreen";
 
 const LoginPage: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -17,8 +18,12 @@ const LoginPage: React.FC = () => {
     setError("");
     try {
       await login(formData.email, formData.password);
-    } catch (err: any) {
-      setError(err?.message || "Invalid credentials. Please try again.");
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message || "Invalid credentials. Please try again.");
+      } else {
+        setError("Invalid credentials. Please try again.");
+      }
     }
   };
 
@@ -28,6 +33,7 @@ const LoginPage: React.FC = () => {
 
   return (
     <>
+      {isLoading && <LoadingScreen message="Logging in..." />}
       <style>{`
         input:-webkit-autofill,
         input:-webkit-autofill:focus,

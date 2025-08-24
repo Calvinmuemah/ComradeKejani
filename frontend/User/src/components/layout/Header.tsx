@@ -1,54 +1,61 @@
-import { Dropdown } from '../ui/Dropdown';
-// import { useStore } from '../../store/useStore';
-
-import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { Bell, User, Heart, Menu, Search, Sun, Moon, SlidersHorizontal } from 'lucide-react';
-import { useState } from 'react';
-import { Modal } from '../ui/Modal';
-// import FilterPanel from '../FilterPanel';
+import React, { useState, useEffect, useRef } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Bell, Heart, Menu, Search, Sun, Moon, SlidersHorizontal, Loader2, MapPin, X } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { useStore } from '../../store/useStore';
-import { useTheme } from '../../contexts/ThemeContext';
+import { useTheme } from '../../contexts/useTheme';
 import { AnimatedBorderTab } from '../ui/AnimatedBorderTab';
 
 export const Header: React.FC = () => {
-  const { houses, searchFilters, setSearchFilters, searchHouses } = useStore();
-  // Dropdown state
-  const [selectedPrice, setSelectedPrice] = useState<[number, number]>(searchFilters.priceRange);
-  const [selectedLocations, setSelectedLocations] = useState<string[]>(searchFilters.estate);
-  const [selectedTypes, setSelectedTypes] = useState<string[]>(searchFilters.houseTypes);
-
-  // Get unique locations and types from houses
-  const allLocations = Array.from(new Set(houses.map(h => h.location.estate))).sort();
-  const allTypes = Array.from(new Set(houses.map(h => h.type))).sort();
-
-  // Price options (ranges)
-  const priceOptions = [
-    [1000, 5000],
-    [5001, 10000],
-    [10001, 15000],
-    [15001, 20000],
-    [20001, 50000],
-  ];
-  const priceLabels = priceOptions.map(([min, max]) => `KSh ${min.toLocaleString()} - ${max.toLocaleString()}`);
-
-  // Handle filter changes
-  const handleApplyFilters = () => {
-    setSearchFilters({
-      priceRange: selectedPrice,
-      estate: selectedLocations,
-      houseTypes: selectedTypes as any, // HouseType[]
-    });
-    searchHouses();
-    setShowFilterModal(false);
-  };
-  // Filter modal state
-  const [showFilterModal, setShowFilterModal] = useState(false);
-  // For viewing house details from filter panel (optional, can be extended)
+  const { unreadCount, toggleSidebar, compareList, toggleDarkMode, searchQuery, setSearchQuery, searchHouses, searchResults, loading, houses } = useStore();
+  
   const location = useLocation();
-  const { unreadCount, toggleSidebar, compareList } = useStore();
   const { theme, toggleTheme } = useTheme();
+  const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
+  const [localQuery, setLocalQuery] = useState(searchQuery);
+  const debounceRef = useRef<number | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+
+  // Sync global query when we accept result
+  useEffect(() => { setLocalQuery(searchQuery); }, [searchQuery]);
+
+  // Click outside to close
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    if (open) document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  // Debounced search
+  useEffect(() => {
+    if (!localQuery.trim()) { setSearchQuery(''); return; }
+    if (debounceRef.current) window.clearTimeout(debounceRef.current);
+    debounceRef.current = window.setTimeout(async () => {
+      setSearchQuery(localQuery.trim());
+      await searchHouses();
+      setOpen(true);
+    }, 400);
+    return () => { if (debounceRef.current) window.clearTimeout(debounceRef.current); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [localQuery]);
+
+  const handleSelectHouse = (id: string) => {
+    setOpen(false);
+    navigate(`/house/${id}`);
+  };
+
+  const filteredLocal = !localQuery ? [] : searchResults.length > 0 ? searchResults : houses.filter(h => h.title.toLowerCase().includes(localQuery.toLowerCase())).slice(0,8);
+
+  // Function to handle theme toggle that syncs both theme providers
+  const handleThemeToggle = () => {
+    toggleTheme(); // Update ThemeContext
+    toggleDarkMode(); // Update useStore
+  };
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -107,14 +114,27 @@ export const Header: React.FC = () => {
           </div>
 
           {/* Search Bar & Filter Button */}
-          <div className="hidden md:flex flex-1 max-w-md mx-8">
+          <div className="hidden md:flex flex-1 max-w-lg mx-8" ref={containerRef}>
             <div className="relative w-full flex items-center gap-2">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <input
                 type="text"
-                placeholder="Search houses, estates, or features..."
-                className="w-full rounded-lg bg-background border border-input pl-10 pr-4 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                value={localQuery}
+                onChange={e => { setLocalQuery(e.target.value); if (!open) setOpen(true); }}
+                onFocus={() => { if (localQuery.trim()) setOpen(true); }}
+                placeholder="Search houses, estates, features..."
+                className="w-full rounded-lg bg-background border border-input pl-10 pr-10 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               />
+              {localQuery && (
+                <button
+                  type="button"
+                  onClick={() => { setLocalQuery(''); setOpen(false); }}
+                  className="absolute right-14 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  aria-label="Clear search"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
               <Link
                 to="/filter"
                 className="flex items-center gap-1 px-3 py-2 ml-2 rounded-lg border border-primary bg-primary/10 text-primary hover:bg-primary/20 transition-all shadow-sm"
@@ -123,6 +143,38 @@ export const Header: React.FC = () => {
                 <SlidersHorizontal className="h-5 w-5" />
                 <span className="hidden md:inline text-xs font-semibold">Filters</span>
               </Link>
+              {/* Results dropdown */}
+              {open && (
+                <div className={`absolute left-0 top-11 w-full rounded-lg border bg-background shadow-lg z-50 overflow-hidden ${theme==='dark'?'border-primary/20':'border-border'}`}>
+                  <div className="max-h-96 overflow-y-auto divide-y">
+                    {loading && <div className="flex items-center gap-2 px-4 py-3 text-sm text-muted-foreground"><Loader2 className="w-4 h-4 animate-spin" /> Searching...</div>}
+                    {!loading && filteredLocal.length === 0 && (
+                      <div className="px-4 py-3 text-sm text-muted-foreground">No results</div>
+                    )}
+                    {!loading && filteredLocal.map(h => (
+                      <button
+                        key={h.id}
+                        type="button"
+                        onClick={() => handleSelectHouse(h.id)}
+                        className="w-full text-left px-4 py-3 hover:bg-muted/50 focus:bg-muted/60 flex flex-col gap-1"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium text-sm line-clamp-1">{h.title || 'Untitled House'}</span>
+                          <span className="text-xs font-semibold text-primary">KSh {h.price.toLocaleString()}</span>
+                        </div>
+                        <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                          <MapPin className="w-3 h-3" />
+                          <span className="line-clamp-1">{h.location?.estate}</span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex items-center justify-between px-3 py-2 bg-muted/30 text-[10px] text-muted-foreground">
+                    <span>{filteredLocal.length} result{filteredLocal.length!==1?'s':''}</span>
+                    {searchQuery && <span>Query: {searchQuery}</span>}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
   {/* Filter Panel removed: now handled by FilterPage route */}
@@ -149,7 +201,7 @@ export const Header: React.FC = () => {
             </Link>
 
             {/* Theme Toggle Button */}
-            <Button variant="ghost" size="icon" onClick={toggleTheme} aria-label="Toggle theme">
+            <Button variant="ghost" size="icon" onClick={handleThemeToggle} aria-label="Toggle theme">
               {theme === 'light' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
             </Button>
           </div>

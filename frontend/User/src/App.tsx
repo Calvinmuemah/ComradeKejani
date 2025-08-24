@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Header } from './components/layout/Header';
 import { Sidebar } from './components/layout/Sidebar';
@@ -13,24 +13,19 @@ import { SafetyPage } from './pages/SafetyPage';
 import { ComparePage } from './pages/ComparePage';
 import FilterPage from './pages/FilterPage';
 import { useStore } from './store/useStore';
+import { useTheme } from './contexts/useTheme';
 
 function App() {
-  const { darkMode, fetchNotifications } = useStore();
+  const { fetchNotifications } = useStore();
+  const { theme } = useTheme();
 
   useEffect(() => {
     // Initialize notifications
     fetchNotifications();
-    
-    // Apply dark mode class
-    if (darkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [darkMode, fetchNotifications]);
+  }, [fetchNotifications]);
 
   return (
-    <div className="min-h-screen bg-oxford-900 text-blue-100">
+    <div className={`min-h-screen ${theme === 'dark' ? 'bg-oxford-900 text-foreground' : 'bg-white text-gray-900'}`}>
       <Router>
         <div className="flex flex-col min-h-screen">
           <Header />
@@ -38,7 +33,7 @@ function App() {
           <div className="flex flex-1">
             <Sidebar />
             
-            <main className="flex-1 overflow-auto">
+            <main className={`flex-1 overflow-auto ${theme === 'light' ? 'bg-white' : ''}`}>
               <Routes>
                 <Route path="/" element={<HomePage />} />
                 <Route path="/house/:id" element={<HouseDetailPage />} />

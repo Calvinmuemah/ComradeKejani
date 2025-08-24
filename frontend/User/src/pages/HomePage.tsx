@@ -8,6 +8,7 @@ import { Button } from '../components/ui/Button';
 import { useStore } from '../store/useStore';
 import { apiService } from '../services/api';
 import { House } from '../types';
+import { useTheme } from '../contexts/useTheme';
 
 interface Review {
   _id: string;
@@ -25,6 +26,8 @@ interface Review {
 
 export const HomePage: React.FC = () => {
   const { houses, loading, error, fetchHouses, searchResults, searchQuery } = useStore();
+  const { theme } = useTheme();
+  const isLight = theme === 'light';
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [recentReviews, setRecentReviews] = useState<Review[]>([]);
   const refreshTimerRef = useRef<number | null>(null);
@@ -192,8 +195,58 @@ export const HomePage: React.FC = () => {
   const displayHouses = searchQuery 
     ? assignReviewsToHouses(searchResults, recentReviews) 
     : assignReviewsToHouses(houses, recentReviews);
+    
+  // Algorithm to select 4 featured houses based on multiple criteria
+  const selectFeaturedHouses = (houses: House[]): House[] => {
+    // Only consider verified houses
+    const verifiedHouses = houses.filter(house => house.verification.verified);
+    
+    if (verifiedHouses.length === 0) {
+      // If no verified houses, take any houses up to 4
+      return houses.slice(0, 4);
+    }
+    
+    if (verifiedHouses.length <= 4) {
+      // If 4 or fewer verified houses, return all of them
+      return verifiedHouses;
+    }
+    
+    // Score each house based on multiple criteria
+    const scoredHouses = verifiedHouses.map(house => {
+      let score = 0;
+      
+      // Score based on rating (0-5 points)
+      score += house.rating || 0;
+      
+      // Score based on number of amenities (0-3 points)
+      const amenitiesCount = house.amenities.filter(a => a.available).length;
+      score += Math.min(amenitiesCount / 3, 3);
+      
+      // Score based on safety rating (0-5 points)
+      score += house.safetyRating || 0;
+      
+      // Score based on review count (0-2 points)
+      score += Math.min((house.reviewCount || 0) / 5, 2);
+      
+      // Score based on proximity to university (0-2 points)
+      const walkingDistance = house.location.distanceFromUniversity.walking;
+      score += walkingDistance <= 10 ? 2 : walkingDistance <= 20 ? 1 : 0;
+      
+      // Score based on vacancy (1 point bonus for vacant houses)
+      score += house.status === 'vacant' ? 1 : 0;
+      
+      return { house, score };
+    });
+    
+    // Sort by score (highest first) and take the top 4
+    return scoredHouses
+      .sort((a, b) => b.score - a.score)
+      .map(item => item.house)
+      .slice(0, 4);
+  };
+  
   const featuredHouses = assignReviewsToHouses(
-    houses.filter(house => house.verification.verified).slice(0, 6),
+    selectFeaturedHouses(houses),
     recentReviews
   );
   const trendingEstates = ['Amalemba', 'Kefinco', 'Maraba'];
@@ -201,10 +254,10 @@ export const HomePage: React.FC = () => {
   // Skip loading screen for background refreshes - only show on first load when there are no houses
   if (loading && houses.length === 0) {
     return (
-      <div className="container mx-auto px-4 py-8 bg-oxford-900">
+      <div className={`container mx-auto px-4 py-8 ${isLight ? 'bg-white' : 'bg-oxford-900'}`}>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[...Array(6)].map((_, i) => (
-            <div key={i} className="h-80 bg-muted rounded-lg animate-pulse" />
+            <div key={i} className={`h-80 rounded-lg animate-pulse ${isLight ? 'bg-gray-100' : 'bg-muted'}`} />
           ))}
         </div>
       </div>
@@ -213,7 +266,7 @@ export const HomePage: React.FC = () => {
 
   if (error) {
     return (
-      <div className="container mx-auto px-4 py-8 bg-oxford-900">
+      <div className={`container mx-auto px-4 py-8 ${isLight ? 'bg-white' : 'bg-oxford-900'}`}>
         <div className="text-center">
           <p className="text-destructive">{error}</p>
           <Button onClick={() => fetchHouses()} className="mt-4">
@@ -225,34 +278,42 @@ export const HomePage: React.FC = () => {
   }
 
   return (
-  <div className="py-8 px-4 md:px-8 space-y-8 animate-fadeIn bg-oxford-900">
+  <div className={`py-8 px-4 md:px-8 space-y-8 animate-fadeIn ${isLight ? 'bg-white' : 'bg-oxford-900'}`}>
       {/* Hero Section */}
-  <div className="text-center space-y-4 py-12 bg-gradient-to-r from-blue-500/10 to-purple-600/10 rounded-2xl animate-fadeIn delay-100">
-  <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent transition-all duration-500 hover:scale-105">
+  <div className={`text-center space-y-4 py-12 rounded-2xl animate-fadeIn delay-100 ${
+    isLight 
+      ? 'bg-gradient-to-r from-blue-50 to-blue-100' 
+      : 'bg-gradient-to-r from-blue-500/10 to-purple-600/10'
+  }`}>
+  <h1 className={`text-4xl md:text-6xl font-bold transition-all duration-500 hover:scale-105 ${
+    isLight 
+      ? 'text-blue-600' 
+      : 'bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent'
+  }`}>
           Find Your Perfect Student Home
         </h1>
-                <p className="text-xl text-blue-200 max-w-2xl mx-auto">
+        <p className={`text-xl max-w-2xl mx-auto ${isLight ? 'text-gray-600' : 'text-blue-200'}`}>
           Find the perfect student accommodation near Masinde Muliro University
         </p>
       </div>
 
       {/* Quick Stats */}
   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 animate-fadeIn delay-200">
-        <Card>
+        <Card className={isLight ? 'bg-white border border-gray-200 shadow-sm' : ''}>
           <CardContent className="p-4 text-center">
             <div className="text-2xl font-bold text-primary">{houses.length}</div>
-            <div className="text-sm text-blue-200">Available Houses</div>
+            <div className={`text-sm ${isLight ? 'text-gray-600' : 'text-blue-200'}`}>Available Houses</div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className={isLight ? 'bg-white border border-gray-200 shadow-sm' : ''}>
           <CardContent className="p-4 text-center">
             <div className="text-2xl font-bold text-green-500">
               {houses.filter(h => h.verification.verified).length}
             </div>
-            <div className="text-sm text-blue-200">Verified Properties</div>
+            <div className={`text-sm ${isLight ? 'text-gray-600' : 'text-blue-200'}`}>Verified Properties</div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className={isLight ? 'bg-white border border-gray-200 shadow-sm' : ''}>
           <CardContent className="p-4 text-center">
             <div className="text-2xl font-bold text-yellow-500">
               {recentReviews.length > 0 
@@ -260,25 +321,25 @@ export const HomePage: React.FC = () => {
                 : 'N/A'
               }
             </div>
-            <div className="text-sm text-blue-200">Average Rating</div>
+            <div className={`text-sm ${isLight ? 'text-gray-600' : 'text-blue-200'}`}>Average Rating</div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className={isLight ? 'bg-white border border-gray-200 shadow-sm' : ''}>
           <CardContent className="p-4 text-center">
             <div className="text-2xl font-bold text-blue-500">
               {recentReviews.length}
             </div>
-            <div className="text-sm text-blue-200">Total Reviews</div>
+            <div className={`text-sm ${isLight ? 'text-gray-600' : 'text-blue-200'}`}>Total Reviews</div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className={isLight ? 'bg-white border border-gray-200 shadow-sm' : ''}>
           <CardContent className="p-4 text-center">
             <div className="text-2xl font-bold text-purple-500">
               {houses.length > 0
                 ? `KSh ${Math.round(houses.reduce((acc, h) => acc + h.price, 0) / houses.length).toLocaleString()}`
                 : 'N/A'}
             </div>
-            <div className="text-sm text-blue-200">Average Rent</div>
+            <div className={`text-sm ${isLight ? 'text-gray-600' : 'text-blue-200'}`}>Average Rent</div>
           </CardContent>
         </Card>
       </div>
@@ -286,12 +347,17 @@ export const HomePage: React.FC = () => {
       {/* Featured Houses */}
       {!searchQuery && featuredHouses.length > 0 && (
         <section className="space-y-4">
-          <div className="flex items-center gap-2 animate-fadeIn delay-300">
-            <Star className="h-5 w-5 text-yellow-500" />
-            <h2 className="text-2xl font-bold">Featured Properties</h2>
-            <Badge variant="verified">Verified</Badge>
+          <div className="flex items-center justify-between animate-fadeIn delay-300">
+            <div className="flex items-center gap-2">
+              <Star className="h-5 w-5 text-yellow-500" />
+              <h2 className="text-2xl font-bold">Featured Properties</h2>
+              <Badge variant="verified">Verified</Badge>
+            </div>
+            <div className={`text-xs ${isLight ? 'text-gray-500' : 'text-blue-300'}`}>
+              Selected based on amenities, ratings, and location
+            </div>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-2 gap-y-6 animate-fadeIn delay-400">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-6 animate-fadeIn delay-400">
             {featuredHouses.map((house) => (
               <HouseCard key={house.id} house={house} />
             ))}

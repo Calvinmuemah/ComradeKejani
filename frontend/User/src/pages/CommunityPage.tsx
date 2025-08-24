@@ -1,31 +1,33 @@
-
-
 import { useState, useEffect } from 'react';
 import { apiService } from '../services/api';
-import { Users, MessageCircle, ThumbsUp, Star, Clock, User } from 'lucide-react';
+import { Users, MessageCircle, ThumbsUp, Star, Clock, User, Eye, Bookmark, MapPin } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { useStore } from '../store/useStore';
-import type { ForumPost, ForumReply } from '../types';
+import { useTheme } from '../contexts/useTheme';
+import type { ForumPost, ForumReply, House } from '../types';
 import { HouseCard } from '../components/HouseCard';
+import { useSilentData } from '../hooks/useSilentData';
 import { HouseDetailsModal } from './HouseDetailsModal';
 
 export const CommunityPage = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const categories = ['all', 'Housing Advice', 'Amenities', 'Safety', 'General'];
-  const { aiRecommendations, houses } = useStore();
-  const recommendations = aiRecommendations.map((rec, idx) => {
-    const house = houses.find(h => h.id === rec.houseId);
-    return {
-      id: rec.houseId,
-      title: house ? house.title : `Recommended House #${idx + 1}`,
-      description: house ? `${house.location.estate} - KSh ${house.price.toLocaleString()}` : '',
-      confidence: Math.round(rec.confidence * 100),
-      reasons: rec.reasons,
-    };
-  });
+  const { houses } = useStore();
+  const { theme } = useTheme();
+  // We're now using topReviews instead of this mapping
+  // const recommendations = aiRecommendations.map((rec, idx) => {
+  //   const house = houses.find(h => h.id === rec.houseId);
+  //   return {
+  //     id: rec.houseId,
+  //     title: house ? house.title : `Recommended House #${idx + 1}`,
+  //     description: house ? `${house.location.estate} - KSh ${house.price.toLocaleString()}` : '',
+  //     confidence: Math.round(rec.confidence * 100),
+  //     reasons: rec.reasons,
+  //   };
+  // });
 
   // Forum state
   const [forumPosts, setForumPosts] = useState<ForumPost[]>([]);
@@ -52,18 +54,35 @@ export const CommunityPage = () => {
   const [likeLoading, setLikeLoading] = useState<string | null>(null);
   const [userId] = useState('user1'); // Replace with real user id from auth
   // Browse Listings modal state
-  const [selectedHouse, setSelectedHouse] = useState(null);
+  const [selectedHouse, setSelectedHouse] = useState<House | null>(null);
 
-  // Reviews (sidebar)
-  interface Review {
-    id: string;
-    userName: string;
-    rating: number;
-    comment: string;
-  }
-  const [allReviews, setAllReviews] = useState<Review[]>([]);
-  const [reviewsLoading, setReviewsLoading] = useState(false);
-  const [reviewsError, setReviewsError] = useState('');
+  // Recent Reviews (silent cached)
+  interface Review { id: string; userName: string; rating: number; comment: string; createdAt?: Date }
+  interface RecentReviewAPI { _id?: string; id?: string; userName: string; rating: number; comment: string; createdAt?: string | Date }
+  const { data: recentReviews, stale: recentReviewsStale } = useSilentData<Review[]>({
+    cacheKey: 'ck_recent_reviews',
+    fetcher: async () => {
+      const raw: RecentReviewAPI[] = await apiService.getRecentReviews();
+      return raw.map(r => ({
+        id: r._id || r.id || '',
+        userName: r.userName,
+        rating: r.rating,
+        comment: r.comment,
+        createdAt: r.createdAt ? new Date(r.createdAt) : undefined
+      }));
+    },
+    parse: raw => Array.isArray(raw)
+      ? (raw as RecentReviewAPI[]).map(r => ({
+          id: r._id || r.id || '',
+          userName: r.userName,
+          rating: r.rating,
+          comment: r.comment,
+          createdAt: r.createdAt ? new Date(r.createdAt) : undefined
+        }))
+      : null,
+    compare: (a, b) => a.length === b.length && a.every((r,i) => r.id === b[i].id)
+  });
+  const allReviews = recentReviews || [];
 
   // Fetch forum posts
   const fetchForumPosts = async () => {
@@ -73,10 +92,15 @@ export const CommunityPage = () => {
       const data = await apiService.getForumPosts();
       // Map _id to id for posts and replies
       setForumPosts(
-        data.map((p: ForumPost & { _id: string; replies?: (ForumReply & { _id: string })[] }) => ({
+        data.map((p) => ({
           ...p,
           id: p._id,
-          replies: (p.replies || []).map((r: ForumReply & { _id: string }) => ({ ...r, id: r._id })),
+          // Ensure likes is always an array
+          likes: p.likes || [],
+          replies: (p.replies || []).map((r) => ({ 
+            ...r, 
+            id: r._id 
+          })),
         }))
       );
     } catch {
@@ -88,22 +112,38 @@ export const CommunityPage = () => {
 
   useEffect(() => { fetchForumPosts(); }, []);
 
-  // Fetch reviews (sidebar)
-  useEffect(() => {
-    const fetchRecentReviews = async () => {
-      setReviewsLoading(true);
-      setReviewsError('');
-      try {
-        const data = await apiService.getRecentReviews();
-        setAllReviews(data);
-      } catch {
-        setReviewsError('Could not load reviews');
-      } finally {
-        setReviewsLoading(false);
-      }
-    };
-    fetchRecentReviews();
-  }, []);
+  // Fetch top reviews for AI recommendations
+  interface RecHouse { id: string; title: string; price: number; location: { estate: string; address?: string }; images: string[] }
+  interface RecItem { houseId: string; aiRecommendation?: string; recommended: boolean; house?: RecHouse }
+  const { data: recItems } = useSilentData<RecItem[]>({
+    cacheKey: 'ck_ai_recs_comm',
+    fetcher: async () => {
+      const reviewsData = await apiService.getTopReviews();
+      type Raw = { houseId: string; aiRecommendation?: string; house?: { id?: string; _id?: string; title?: string; price: number; images?: string[]; location?: { estate?: string; address?: string } } };
+      const seen = new Set<string>();
+      return (reviewsData as Raw[])
+        .filter(r => r.house && r.house.title)
+        .filter(r => { if (seen.has(r.houseId)) return false; seen.add(r.houseId); return true; })
+        .map(r => ({
+          houseId: r.houseId,
+          aiRecommendation: r.aiRecommendation,
+          recommended: true,
+          house: r.house ? {
+            id: r.house.id || r.house._id || r.houseId,
+            title: r.house.title || '',
+            price: r.house.price,
+            location: { estate: r.house.location?.estate || '', address: r.house.location?.address },
+            images: r.house.images || []
+          } : undefined
+        }));
+    },
+    parse: raw => Array.isArray(raw) ? raw as RecItem[] : null,
+    compare: (a, b) => JSON.stringify(a.map(x => x.houseId)) === JSON.stringify(b.map(x => x.houseId))
+  });
+  const topReviews = recItems || [];
+  const [addingFavoriteId, setAddingFavoriteId] = useState<string | null>(null);
+
+  // (Removed legacy recommendation effect; handled by useSilentData hook)
 
   // Filtered posts by category
   const filteredPosts = selectedCategory === 'all'
@@ -184,7 +224,7 @@ export const CommunityPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className={`min-h-screen ${theme === 'dark' ? 'bg-oxford-900' : 'bg-white'}`}>
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
@@ -207,35 +247,61 @@ export const CommunityPage = () => {
                   AI Recommendations for You
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                {recommendations.map((rec) => (
-                  <div key={rec.id} className="p-4 border rounded-lg">
-                    <div className="flex justify-between items-start mb-2">
-                      <h4 className="font-semibold text-foreground">{rec.title}</h4>
-                      <Badge variant="secondary" className="text-xs">
-                        {rec.confidence}% match
-                      </Badge>
-                    </div>
-                    <p className="text-sm text-muted-foreground mb-3">{rec.description}</p>
-                    <div className="space-y-1">
-                      {rec.reasons.map((reason, index) => (
-                        <p key={index} className="text-xs text-muted-foreground flex items-center gap-1">
-                          <span className="w-1 h-1 bg-primary rounded-full"></span>
-                          {reason}
-                        </p>
+              <CardContent>
+                {topReviews.length > 0 ? (
+                  <div className="relative ml-4">
+                    <div className="absolute left-2 top-0 bottom-0 w-0.5 bg-primary/20" />
+                    <div className="flex flex-col gap-6">
+                      {topReviews.map((rec, index) => (
+                        <div key={rec.houseId} className="relative pl-10 group">
+                          <div className="absolute left-0 top-2 w-5 h-5 rounded-full bg-gradient-to-br from-primary to-blue-500 text-[10px] font-bold text-background flex items-center justify-center ring-4 ring-background dark:ring-oxford-900 shadow">
+                            {index + 1}
+                          </div>
+                          <div className="rounded-lg border bg-transparent dark:bg-transparent p-4 transition-shadow group-hover:shadow-md">
+                            <div className="flex items-start justify-between mb-1">
+                              <h3 className="font-semibold text-base leading-snug pr-2 line-clamp-1">{rec.house?.title}</h3>
+                              <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-primary text-white">AI</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-2">
+                              <MapPin className="w-3 h-3" />
+                              <span>{rec.house?.location?.estate}</span>
+                              <span className="mx-1 text-muted-foreground/40">•</span>
+                              <span className="font-medium text-primary">KSh {rec.house?.price?.toLocaleString()}</span>
+                            </div>
+                            {rec.aiRecommendation && (
+                              <div className="relative mb-3">
+                                <div className="pl-3 border-l-2 border-primary/40 relative">
+                                  <span className="absolute -left-[5px] top-1 w-2.5 h-2.5 rounded-full bg-primary/70 ring-2 ring-background dark:ring-oxford-900" />
+                                  <p className="text-xs italic text-muted-foreground leading-relaxed mt-0.5">{rec.aiRecommendation}</p>
+                                </div>
+                              </div>
+                            )}
+                            {rec.house?.images && rec.house.images.length > 0 && (
+                              <img src={rec.house.images[0]} alt={rec.house.title} className="mb-3 w-full h-36 object-cover rounded" />
+                            )}
+                            <div className="flex gap-2">
+                              <Button size="sm" variant="outline" onClick={() => {
+                                if (rec.house) {
+                                  const full = houses.find(h => h.id === rec.house!.id) || rec.house as unknown as House;
+                                  setSelectedHouse(full as House);
+                                }
+                              }}>
+                                <Eye className="w-3.5 h-3.5 mr-1" />Details
+                              </Button>
+                              <Button size="sm" disabled={addingFavoriteId === rec.houseId} onClick={async () => {
+                                if (!rec.house) return;
+                                try { setAddingFavoriteId(rec.houseId); await apiService.addToFavorites(rec.house.id); } finally { setAddingFavoriteId(null);} }}>
+                                <Bookmark className="w-3.5 h-3.5 mr-1" />{addingFavoriteId === rec.houseId ? 'Saving...' : 'Save'}
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
                       ))}
                     </div>
-                    <div className="flex gap-2 mt-3">
-                      <Button size="sm" variant="outline">
-                        <ThumbsUp className="w-3 h-3 mr-1" />
-                        Helpful
-                      </Button>
-                      <Button size="sm" variant="ghost">
-                        Not useful
-                      </Button>
-                    </div>
                   </div>
-                ))}
+                ) : (
+                  <p className="text-center text-muted-foreground">No AI recommendations yet.</p>
+                )}
               </CardContent>
             </Card>
 
@@ -365,7 +431,7 @@ export const CommunityPage = () => {
                                    {/* Small popup for author name */}
                                    {showReplyPopup && pendingReplyPostId === post.id && (
                                      <form
-                                       className="absolute left-0 top-12 z-50 bg-background border border-primary/30 rounded shadow p-3 w-56 animate-fadeIn flex flex-col gap-2"
+                                       className={`absolute left-0 top-12 z-50 ${theme === 'dark' ? 'bg-oxford-800' : 'bg-background'} border border-primary/30 rounded shadow p-3 w-56 animate-fadeIn flex flex-col gap-2`}
                                        onSubmit={e => { e.preventDefault(); handleReplyAuthorSubmit(); }}
                                      >
                                        <span className="text-sm font-semibold text-center">Enter your name</span>
@@ -401,7 +467,7 @@ export const CommunityPage = () => {
                  {/* Inline New Post Form (replaces Modal) */}
                  {showPostModal && (
                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-                     <form onSubmit={handlePostSubmit} className="w-full max-w-lg mx-auto space-y-6 bg-background p-6 rounded-lg shadow animate-fadeIn border border-primary/20">
+                     <form onSubmit={handlePostSubmit} className={`w-full max-w-lg mx-auto space-y-6 ${theme === 'dark' ? 'bg-oxford-800' : 'bg-background'} p-6 rounded-lg shadow animate-fadeIn border border-primary/20`}>
                        <h2 className="text-2xl font-bold text-center">Create New Post</h2>
                        <div>
                          <label className="block text-sm font-medium mb-1">Title</label>
@@ -416,7 +482,7 @@ export const CommunityPage = () => {
                        <div>
                          <label className="block text-sm font-medium mb-1">Category</label>
                          <select
-                           className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                           className={`w-full rounded-md border border-input ${theme === 'dark' ? 'bg-oxford-800' : 'bg-background'} px-3 py-2 text-sm`}
                            value={newPost.category}
                            onChange={e => setNewPost({ ...newPost, category: e.target.value })}
                            required
@@ -431,7 +497,7 @@ export const CommunityPage = () => {
                        <div>
                          <label className="block text-sm font-medium mb-1">Content</label>
                          <textarea
-                           className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm min-h-[100px]"
+                           className={`w-full rounded-md border border-input ${theme === 'dark' ? 'bg-oxford-800' : 'bg-background'} px-3 py-2 text-sm min-h-[100px]`}
                            value={newPost.content}
                            onChange={e => setNewPost({ ...newPost, content: e.target.value })}
                            placeholder="Write your post..."
@@ -480,7 +546,7 @@ export const CommunityPage = () => {
                   <span className="font-semibold">{forumPosts.length}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-muted-foreground">Houses Reviewed</span>
+                  <span className="text-muted-foreground">Recent Reviews</span>
                   <span className="font-semibold">{allReviews.length}</span>
                 </div>
               </CardContent>
@@ -526,7 +592,7 @@ export const CommunityPage = () => {
             } finally {
               setReviewPosting(false);
             }
-          }} className="w-full max-w-md mx-auto space-y-6 bg-background p-6 rounded-lg shadow animate-fadeIn border border-primary/20">
+          }} className={`w-full max-w-md mx-auto space-y-6 ${theme === 'dark' ? 'bg-oxford-800' : 'bg-background'} p-6 rounded-lg shadow animate-fadeIn border border-primary/20`}>
             <h2 className="text-xl font-bold text-center">Write a Review</h2>
             <div>
               <label className="block text-sm font-medium mb-1">Your Name</label>
@@ -534,13 +600,13 @@ export const CommunityPage = () => {
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Rating</label>
-              <select className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={reviewData.rating} onChange={e => setReviewData(d => ({ ...d, rating: Number(e.target.value) }))} required disabled={reviewPosting}>
+              <select className={`w-full rounded-md border border-input ${theme === 'dark' ? 'bg-oxford-800' : 'bg-background'} px-3 py-2 text-sm`} value={reviewData.rating} onChange={e => setReviewData(d => ({ ...d, rating: Number(e.target.value) }))} required disabled={reviewPosting}>
                 {[5,4,3,2,1].map(r => <option key={r} value={r}>{r} Star{r > 1 ? 's' : ''}</option>)}
               </select>
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Comment</label>
-              <textarea className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm min-h-[80px]" value={reviewData.comment} onChange={e => setReviewData(d => ({ ...d, comment: e.target.value }))} placeholder="Write your review..." required disabled={reviewPosting} />
+              <textarea className={`w-full rounded-md border border-input ${theme === 'dark' ? 'bg-oxford-800' : 'bg-background'} px-3 py-2 text-sm min-h-[80px]`} value={reviewData.comment} onChange={e => setReviewData(d => ({ ...d, comment: e.target.value }))} placeholder="Write your review..." required disabled={reviewPosting} />
             </div>
             <div className="flex gap-2">
               <Button type="submit" className="flex-1" disabled={reviewPosting}>{reviewPosting ? 'Posting...' : 'Post Review'}</Button>
@@ -567,13 +633,13 @@ export const CommunityPage = () => {
                 setReportPosting(false);
               }
             }}
-            className="w-full max-w-md mx-auto space-y-6 bg-background p-6 rounded-lg shadow animate-fadeIn border border-primary/20"
+            className={`w-full max-w-md mx-auto space-y-6 ${theme === 'dark' ? 'bg-oxford-800' : 'bg-background'} p-6 rounded-lg shadow animate-fadeIn border border-primary/20`}
           >
             <h2 className="text-xl font-bold text-center">Report an Issue</h2>
             <div>
               <label className="block text-sm font-medium mb-1">Type of Issue</label>
               <select
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                className={`w-full rounded-md border border-input ${theme === 'dark' ? 'bg-oxford-800' : 'bg-background'} px-3 py-2 text-sm`}
                 value={reportData.type}
                 onChange={e => setReportData(d => ({ ...d, type: e.target.value }))}
                 required
@@ -588,7 +654,7 @@ export const CommunityPage = () => {
             <div>
               <label className="block text-sm font-medium mb-1">Description</label>
               <textarea
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm min-h-[80px]"
+                className={`w-full rounded-md border border-input ${theme === 'dark' ? 'bg-oxford-800' : 'bg-background'} px-3 py-2 text-sm min-h-[80px]`}
                 value={reportData.description}
                 onChange={e => setReportData(d => ({ ...d, description: e.target.value }))}
                 placeholder="Describe the issue..."
@@ -611,7 +677,7 @@ export const CommunityPage = () => {
       {/* Browse Listings Popup (show all houses) */}
       {showListingsPopup && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-          <div className="bg-background p-6 rounded-lg shadow border border-primary/20 max-w-4xl w-full animate-fadeIn flex flex-col items-center relative">
+          <div className={`${theme === 'dark' ? 'bg-oxford-800' : 'bg-background'} p-6 rounded-lg shadow border border-primary/20 max-w-4xl w-full animate-fadeIn flex flex-col items-center relative`}>
             <h2 className="text-lg font-bold mb-4">Browse Listings</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 w-full max-h-[70vh] overflow-y-auto mb-4">
               {houses.length === 0 ? (
@@ -641,7 +707,7 @@ export const CommunityPage = () => {
       {/* Contact Support Popup */}
       {showSupportPopup && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 animate-fadeIn">
-          <div className="bg-background p-8 rounded-2xl shadow-2xl border border-primary/20 max-w-3xl w-full animate-slideUp flex flex-col items-center gap-6 relative overflow-hidden">
+          <div className={`${theme === 'dark' ? 'bg-oxford-800' : 'bg-background'} p-8 rounded-2xl shadow-2xl border border-primary/20 max-w-3xl w-full animate-slideUp flex flex-col items-center gap-6 relative overflow-hidden`}>
             <div className="absolute inset-0 pointer-events-none">
               <div className="absolute -top-10 -left-10 w-40 h-40 bg-primary/10 rounded-full blur-2xl animate-pulse" />
               <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-blue-400/10 rounded-full blur-2xl animate-pulse" />
@@ -652,9 +718,7 @@ export const CommunityPage = () => {
               <div className="p-4 rounded-lg bg-primary/5 border-l-4 border-primary animate-fadeInUp flex flex-col gap-3">
                 <h3 className="font-semibold text-primary mb-1 flex items-center gap-2"><span className="w-2 h-2 bg-primary rounded-full inline-block animate-pulse" />MMUST Emergency Services</h3>
                 <div className="relative flex flex-col gap-3 ml-2">
-                  {/* Vertical line */}
                   <div className="absolute left-2 top-2 bottom-2 w-0.5 bg-primary/30 z-0" />
-                  {/* Node style for each contact */}
                   <div className="flex items-start gap-2 relative z-10">
                     <div className="w-4 h-4 rounded-full bg-primary flex items-center justify-center text-xs font-bold text-background z-10 animate-bounceIn">S</div>
                     <div>
@@ -673,7 +737,6 @@ export const CommunityPage = () => {
               <div className="p-4 rounded-lg bg-primary/5 border-l-4 border-primary animate-fadeInUp flex flex-col gap-3">
                 <h3 className="font-semibold text-primary mb-1 flex items-center gap-2"><span className="w-2 h-2 bg-primary rounded-full inline-block animate-pulse" />Campus Security</h3>
                 <div className="relative flex flex-col gap-3 ml-2">
-                  {/* Vertical line */}
                   <div className="absolute left-2 top-2 bottom-2 w-0.5 bg-primary/30 z-0" />
                   <div className="flex items-start gap-2 relative z-10">
                     <div className="w-4 h-4 rounded-full bg-primary flex items-center justify-center text-xs font-bold text-background z-10 animate-bounceIn">S</div>
@@ -767,15 +830,12 @@ export const CommunityPage = () => {
                 <CardTitle>Recent Reviews</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                {reviewsLoading ? (
-                  <p className="text-muted-foreground">Loading reviews...</p>
-                ) : reviewsError ? (
-                  <p className="text-destructive">{reviewsError}</p>
-                ) : allReviews.length === 0 ? (
+                {allReviews.length === 0 ? (
                   <p className="text-muted-foreground">No reviews yet.</p>
                 ) : (
                   allReviews.slice(0, 5).map((review) => (
-                    <div key={review.id} className="p-3 border rounded-lg">
+                    <div key={review.id} className="p-3 border rounded-lg relative">
+                      {recentReviewsStale && <span className="absolute top-1 right-1 text-[9px] text-muted-foreground">updating…</span>}
                       <div className="flex items-center gap-2 mb-2">
                         <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold text-primary">
                           {review.userName?.charAt(0) || '?'}
@@ -787,9 +847,16 @@ export const CommunityPage = () => {
                           ))}
                         </div>
                       </div>
-                      <p className="text-xs text-muted-foreground line-clamp-2">
+                      <p className="text-xs text-muted-foreground line-clamp-2 mb-1">
                         {review.comment}
                       </p>
+                      {review.createdAt && (
+                        <p className="text-[10px] text-muted-foreground">{
+                          review.createdAt instanceof Date
+                            ? review.createdAt.toLocaleDateString()
+                            : new Date(review.createdAt).toLocaleDateString()
+                        }</p>
+                      )}
                     </div>
                   ))
                 )}

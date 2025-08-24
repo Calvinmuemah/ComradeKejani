@@ -1,6 +1,6 @@
 import React from 'react';
 import { Bell, Search, ChevronDown, LogOut, User, Menu, X } from 'lucide-react';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../contexts/useAuth';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 

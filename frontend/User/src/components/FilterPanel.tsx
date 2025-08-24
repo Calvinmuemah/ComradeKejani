@@ -6,10 +6,9 @@ import { Button } from './ui/Button';
 interface FilterPanelProps {
   houses: House[];
   onSelectHouse: (house: House) => void;
-  onClose: () => void;
 }
 
-const FilterPanel: React.FC<FilterPanelProps> = ({ houses, onSelectHouse, onClose }) => {
+const FilterPanel: React.FC<FilterPanelProps> = ({ houses, onSelectHouse }) => {
   // Get unique locations and price ranges
   // Get unique locations and house types from data
   const allLocations = Array.from(new Set(houses.map(h => h.location.estate))).filter(Boolean).sort();

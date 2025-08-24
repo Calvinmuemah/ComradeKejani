@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Filter, SlidersHorizontal, X } from 'lucide-react';
+import { Search, SlidersHorizontal, X } from 'lucide-react';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import { Badge } from './ui/Badge';
@@ -42,7 +42,15 @@ export const SearchFilters: React.FC<SearchFiltersProps> = ({
     searchHouses();
   };
 
-  const handleFilterChange = (key: keyof typeof searchFilters, value: any) => {
+  type SearchFiltersValue =
+    | number
+    | boolean
+    | string[]
+    | number[]
+    | HouseType[]
+    | string;
+
+  const handleFilterChange = (key: keyof typeof searchFilters, value: SearchFiltersValue) => {
     setSearchFilters({ [key]: value });
     // Auto-apply search on filter change
     setTimeout(() => {

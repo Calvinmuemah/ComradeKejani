@@ -51,8 +51,7 @@ src/
 ├── services/          # API services and external integrations
 │   └── api.ts         # Centralized API endpoints
 ├── store/             # State management (Zustand)
-├── data/              # Mock data and types
-│   └── dummyData.ts   # Development data (replace when backend ready)
+├── data/              # (was mock data; now unused in production)
 ├── types/             # TypeScript type definitions
 ├── utils/             # Utility functions
 └── hooks/             # Custom React hooks
@@ -104,30 +103,12 @@ src/
 
 ## 🔌 Backend Integration
 
-### Replacing Mock Data
+### Backend
 
-The application currently uses mock data from `src/data/dummyData.ts`. To connect to a real backend:
-
-1. **Update API endpoints** in `src/services/api.ts`
-2. **Remove mock data** from `dummyData.ts`
-3. **Update environment variables** in `.env`
-
-```typescript
-// Example: Replace mock data with real API calls
-async getHouses(filters?: Partial<SearchFilters>): Promise<House[]> {
-  // Replace this mock implementation
-  await delay(800);
-  return this.filterHouses(dummyHouses, filters);
-  
-  // With real API call
-  const response = await fetch(`${API_BASE_URL}/houses`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(filters)
-  });
-  return response.json();
-}
-```
+The app now relies entirely on live backend endpoints (no embedded mock data). To point to a different backend:
+1. Update base URL in `src/services/api.ts` (BASE_URL constant)
+2. Adjust environment variables (.env) as needed
+3. Restart dev server
 
 ### Environment Variables
 

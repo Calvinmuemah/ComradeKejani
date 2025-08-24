@@ -37,6 +37,7 @@ export interface House {
       boda: number;
       matatu: number;
     };
+    nearbyEssentials?: NearbyPlace[];
   };
   amenities: {
     name: string;
@@ -157,7 +158,8 @@ export interface UserPreferences {
 
 export interface Notification {
   id: string;
-  type: 'new-listing' | 'price-drop' | 'vacancy-alert' | 'safety-alert' | 'recommendation';
+  _id?: string; // MongoDB identifier
+  type: 'new-listing' | 'price-drop' | 'vacancy-alert' | 'safety-alert' | 'recommendation' | string;
   title: string;
   message: string;
   houseId?: string;

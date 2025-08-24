@@ -1,5 +1,3 @@
-// API related types
-
 export interface ForumPostResponse {
   _id: string;
   title: string;
@@ -21,6 +19,7 @@ export interface ForumReplyResponse {
 export interface HouseResponse {
   _id: string;
   title: string;
+  description: string;
   price: number;
   type: string;
   location: {
@@ -48,6 +47,7 @@ export interface HouseResponse {
     icon: string;
   }>;
   landlord: {
+    _id?: string;
     name?: string;
     phone?: string;
     email?: string;
@@ -70,6 +70,7 @@ export interface HouseResponse {
     verified: boolean;
     verifiedBy?: string;
     verificationDate?: string;
+    verifiedDate?: string;
     badges: string[];
   };
   safetyRating: number;
@@ -92,4 +93,46 @@ export interface ApiResponse<T> {
   data?: T;
   message?: string;
   error?: string;
+}
+
+export interface NotificationResponse {
+  _id: string;
+  type: 'new-listing' | 'price-drop' | 'vacancy-alert' | 'safety-alert' | 'recommendation';
+  title: string;
+  message: string;
+  houseId?: string;
+  read: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PopularEstateResponse {
+  name: string;
+  houses: number;
+  averageRent: number;
+  popularity?: number;
+}
+
+export interface PriceTrendResponse {
+  estate: string;
+  houseType: string;
+  averagePrice: number;
+  trend: 'up' | 'down' | 'stable';
+  percentageChange: number;
+  period: string;
+}
+
+export interface TopReviewResponse {
+  houseId: string;
+  totalReviews: number;
+  recommended: boolean;
+  reviews: {
+    _id: string;
+    houseId: string;
+    userName: string;
+    rating: number;
+    comment: string;
+    createdAt: string;
+    __v: number;
+  }[];
 }

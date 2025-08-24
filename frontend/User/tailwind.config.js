@@ -28,6 +28,7 @@ export default {
           800: '#1e40af',
           900: '#1e3a8a',
         },
+        'surface-hover': 'rgba(255, 255, 255, 0.05)',
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
         ring: 'hsl(var(--ring))',

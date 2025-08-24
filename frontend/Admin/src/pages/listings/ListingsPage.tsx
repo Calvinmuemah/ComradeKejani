@@ -22,7 +22,7 @@ import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Modal } from '../../components/ui/Modal';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../contexts/useAuth';
 import { Permission } from '../../types';
 import { formatCurrency, formatDate } from '../../lib/utils';
 
@@ -251,7 +251,7 @@ const ListingsPage: React.FC = () => {
 																   <span>•</span>
 																   <span>{listing.type || '-'}</span>
 																   <span>•</span>
-																   <span>{formatCurrency(listing.price, 'KES')}</span>
+																   <span>{formatCurrency(listing.price || 0, 'KES')}</span>
 															</div>
 														</div>
 													</div>
@@ -357,7 +357,7 @@ const ListingsPage: React.FC = () => {
 				       <div className="grid grid-cols-2 gap-4">
 					       <div>
 						       <p className="text-sm text-gray-400">Monthly Rent</p>
-						       <p className="text-white font-medium">{formatCurrency(selectedListing.price, 'KES')}</p>
+						       <p className="text-white font-medium">{formatCurrency(selectedListing.price || 0, 'KES')}</p>
 					       </div>
 					       <div>
 						       <p className="text-sm text-gray-400">Status</p>

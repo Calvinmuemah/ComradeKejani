@@ -1,36 +1,63 @@
-import { useState } from 'react';
-import { Shield, AlertTriangle, Info, MapPin, Phone, Clock } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Shield, AlertTriangle, MapPin, Phone, X } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
-// Alert and AlertDescription are not in your UI, so we will use Card for alerts
-
 import { useStore } from '../store/useStore';
+import { useTheme } from '../contexts/useTheme';
+import { Notification } from '../types';
 export const SafetyPage = () => {
   const [selectedArea, setSelectedArea] = useState<string | null>(null);
   const { houses } = useStore();
-  // You may want to fetch safety alerts from backend in future
-  const getSeverityColor = (severity: number) => {
-    if (severity >= 4) return 'destructive';
-    if (severity >= 2) return 'default';
-    return 'secondary';
-  };
-  const getSeverityIcon = (type: string) => {
-    switch (type) {
-      case 'warning': return AlertTriangle;
-      case 'danger': return AlertTriangle;
-      default: return Info;
-    }
-  };
+  const { theme } = useTheme();
+  const [showReportPopup, setShowReportPopup] = useState(false);
+  const [reportData, setReportData] = useState({ description: '', type: 'Safety' });
+  const [reportPosting, setReportPosting] = useState(false);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      setIsLoading(true);
+      try {
+        const response = await fetch('https://comradekejani-k015.onrender.com/api/v1/notifications/getAll');
+        if (response.ok) {
+          const data = await response.json();
+          // Transform data to ensure it matches the Notification type
+          const formattedNotifications = data.map((item: {
+            _id?: string;
+            id?: string;
+            title: string;
+            message: string;
+            type?: string;
+            createdAt: string;
+            read?: boolean;
+            houseId?: string;
+          }) => ({
+            ...item,
+            id: item.id || item._id, // Ensure id is available
+            type: item.type || 'other',
+            read: item.read || false
+          }));
+          setNotifications(formattedNotifications || []);
+        }
+      } catch (error) {
+        console.error('Error fetching notifications:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchNotifications();
+  }, []);
   // No real safety alerts endpoint yet, so skip rendering dummySafetyAlerts
   // For area safety ratings, use houses to infer estates
   const estateCounts: Record<string, number> = {};
   houses.forEach(house => {
     estateCounts[house.location.estate] = (estateCounts[house.location.estate] || 0) + 1;
   });
-  const popularEstates = Object.entries(estateCounts).map(([name, houses]) => ({ name, houses }));
   return (
-    <div className="min-h-screen bg-background">
+    <div className={`min-h-screen ${theme === 'dark' ? 'bg-oxford-900' : 'bg-white'}`}>
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
@@ -52,17 +79,17 @@ export const SafetyPage = () => {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="text-center p-4 border rounded-lg bg-background">
+              <div className={`text-center p-4 rounded-lg border border-primary/30 ${theme === 'dark' ? 'bg-oxford-900' : 'bg-white'}`}>
                 <Phone className="w-6 h-6 text-primary mx-auto mb-2" />
                 <h4 className="font-semibold">Police</h4>
                 <p className="text-lg font-mono">999 / 112</p>
               </div>
-              <div className="text-center p-4 border rounded-lg bg-background">
+              <div className={`text-center p-4 rounded-lg border border-primary/30 ${theme === 'dark' ? 'bg-oxford-900' : 'bg-white'}`}>
                 <Shield className="w-6 h-6 text-primary mx-auto mb-2" />
                 <h4 className="font-semibold">Campus Security</h4>
                 <p className="text-lg font-mono">+254 700 123 456</p>
               </div>
-              <div className="text-center p-4 border rounded-lg bg-background">
+              <div className={`text-center p-4 rounded-lg border border-primary/30 ${theme === 'dark' ? 'bg-oxford-900' : 'bg-white'}`}>
                 <Phone className="w-6 h-6 text-primary mx-auto mb-2" />
                 <h4 className="font-semibold">Emergency</h4>
                 <p className="text-lg font-mono">+254 700 654 321</p>
@@ -78,11 +105,66 @@ export const SafetyPage = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <AlertTriangle className="w-5 h-5" />
-                  Recent Safety Alerts
+                  Notifications
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {/* No real safety alerts yet. Integrate when backend is ready. */}
+                {isLoading ? (
+                  <div className="py-4 text-center">
+                    <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-primary mb-2"></div>
+                    <p className="text-muted-foreground">Loading notifications...</p>
+                  </div>
+                ) : notifications.length > 0 ? (
+                  <div>
+                    {/* Group notifications by type */}
+                    {(() => {
+                      // Group by type
+                      const notificationsByType: Record<string, typeof notifications> = {};
+                      notifications.forEach(notification => {
+                        const type = notification.type || 'other';
+                        if (!notificationsByType[type]) {
+                          notificationsByType[type] = [];
+                        }
+                        notificationsByType[type].push(notification);
+                      });
+
+                      // Display groups
+                      return Object.entries(notificationsByType).map(([type, typeNotifications]) => (
+                        <div key={type} className="mb-6">
+                          <h3 className="text-sm font-semibold uppercase text-primary mb-3">
+                            {type.replace(/-/g, ' ')}
+                          </h3>
+                          
+                          {/* Vertical timeline */}
+                          <div className="relative ml-3">
+                            {/* Vertical line */}
+                            <div className="absolute left-2 top-0 bottom-0 w-0.5 bg-primary/30" />
+                            
+                            <div className="flex flex-col gap-4">
+                              {typeNotifications.map((notification, index) => (
+                                <div key={notification._id || notification.id} className="relative pl-8 animate-fadeIn">
+                                  {/* Node - centered on the vertical line */}
+                                  <div className="absolute left-0 top-1.5 w-4 h-4 rounded-full bg-primary flex items-center justify-center text-xs font-bold text-background z-10">
+                                    {index + 1}
+                                  </div>
+                                  <div className="flex flex-col">
+                                    <span className="font-semibold text-foreground">{notification.title}</span>
+                                    <span className="text-xs text-muted-foreground">
+                                      {new Date(notification.createdAt).toLocaleDateString()}
+                                    </span>
+                                    <p className="text-sm text-muted-foreground mt-1">{notification.message}</p>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      ));
+                    })()}
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground text-center py-4">No notifications at this time.</p>
+                )}
               </CardContent>
             </Card>
 
@@ -138,50 +220,36 @@ export const SafetyPage = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <MapPin className="w-5 h-5" />
-                  Area Safety Ratings
+                  Available Estates
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {popularEstates.map((zone) => {
-                  // Mock safety ratings based on zone data
-                  const safetyRating = Math.min(5, Math.max(2, Math.floor(zone.houses / 40) + 2));
-                  return (
-                    <div 
-                      key={zone.name} 
-                      className={`p-3 border rounded-lg cursor-pointer transition-colors ${
-                        selectedArea === zone.name ? 'border-primary bg-primary/5' : 'hover:border-primary/50'
-                      }`}
-                      onClick={() => setSelectedArea(selectedArea === zone.name ? null : zone.name)}
-                    >
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <h4 className="font-semibold text-foreground">{zone.name}</h4>
-                          <div className="flex items-center gap-1 mt-1">
-                            {[...Array(5)].map((_, i) => (
-                              <Shield 
-                                key={i} 
-                                className={`w-3 h-3 ${
-                                  i < safetyRating ? 'text-green-500 fill-green-500' : 'text-muted-foreground'
-                                }`} 
-                              />
-                            ))}
-                            <span className="text-xs text-muted-foreground ml-1">
-                              {safetyRating}/5
-                            </span>
-                          </div>
+                {Object.keys(estateCounts).map((estateName) => (
+                  <div 
+                    key={estateName} 
+                    className={`p-3 border rounded-lg cursor-pointer transition-colors ${
+                      selectedArea === estateName ? 'border-primary bg-primary/5' : 'hover:border-primary/50'
+                    }`}
+                    onClick={() => setSelectedArea(selectedArea === estateName ? null : estateName)}
+                  >
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <h4 className="font-semibold text-foreground">{estateName}</h4>
+                        <div className="text-xs text-muted-foreground mt-1">
+                          {estateCounts[estateName]} properties available
                         </div>
-                        <Badge variant={safetyRating >= 4 ? 'default' : safetyRating >= 3 ? 'secondary' : 'destructive'}>
-                          {safetyRating >= 4 ? 'Safe' : safetyRating >= 3 ? 'Caution' : 'High Risk'}
-                        </Badge>
                       </div>
-                      {selectedArea === zone.name && (
-                        <div className="mt-3 pt-3 border-t text-sm text-muted-foreground">
-                          <p>Well-lit streets, regular security patrols, good community watch programs.</p>
-                        </div>
-                      )}
+                      <Badge variant="outline">
+                        View
+                      </Badge>
                     </div>
-                  );
-                })}
+                    {selectedArea === estateName && (
+                      <div className="mt-3 pt-3 border-t text-sm text-muted-foreground">
+                        <p>Located in {estateName} area with {estateCounts[estateName]} available properties.</p>
+                      </div>
+                    )}
+                  </div>
+                ))}
               </CardContent>
             </Card>
 
@@ -194,7 +262,7 @@ export const SafetyPage = () => {
                 <p className="text-sm text-muted-foreground mb-4">
                   Help keep the community safe by reporting safety concerns.
                 </p>
-                <Button className="w-full">
+                <Button className="w-full" onClick={() => setShowReportPopup(true)}>
                   <AlertTriangle className="w-4 h-4 mr-2" />
                   Report Issue
                 </Button>
@@ -203,6 +271,87 @@ export const SafetyPage = () => {
           </div>
         </div>
       </div>
+      
+      {/* Report an Issue Popup */}
+      {showReportPopup && (
+        <div className={`fixed inset-0 z-50 flex items-center justify-center ${theme === 'dark' ? 'bg-black/60' : 'bg-black/30'}`}>
+          <form
+            onSubmit={async e => {
+              e.preventDefault();
+              setReportPosting(true);
+              try {
+                const payload = { description: reportData.description, type: reportData.type };
+                console.log('Submitting report issue:', payload);
+                const response = await fetch('https://comradekejani-k015.onrender.com/api/v1/reports/create', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(payload),
+                });
+                
+                if (response.ok) {
+                  setShowReportPopup(false);
+                  setReportData({ description: '', type: 'Safety' });
+                  alert('Report submitted successfully!');
+                } else {
+                  throw new Error('Failed to submit report');
+                }
+              } catch (error) {
+                console.error('Error submitting report:', error);
+                alert('Failed to submit report. Please try again.');
+              } finally {
+                setReportPosting(false);
+              }
+            }}
+            className={`w-full max-w-md mx-auto space-y-6 ${theme === 'dark' ? 'bg-oxford-900' : 'bg-white'} p-6 rounded-lg shadow animate-fadeIn border border-primary/30`}
+          >
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-bold">Report an Issue</h2>
+              <button 
+                type="button" 
+                onClick={() => setShowReportPopup(false)} 
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium mb-1">Type of Issue</label>
+              <select
+                className={`w-full rounded-md border border-input ${theme === 'dark' ? 'bg-oxford-900' : 'bg-white'} px-3 py-2 text-sm`}
+                value={reportData.type}
+                onChange={e => setReportData(d => ({ ...d, type: e.target.value }))}
+                required
+                disabled={reportPosting}
+              >
+                <option value="Safety">Safety</option>
+                <option value="Complaint">Complaint</option>
+                <option value="Maintenance">Maintenance</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Description</label>
+              <textarea
+                className={`w-full rounded-md border border-input ${theme === 'dark' ? 'bg-oxford-900' : 'bg-white'} px-3 py-2 text-sm min-h-[120px]`}
+                value={reportData.description}
+                onChange={e => setReportData(d => ({ ...d, description: e.target.value }))}
+                placeholder="Describe the issue in detail..."
+                required
+                disabled={reportPosting}
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button type="submit" className="flex-1" disabled={reportPosting}>
+                {reportPosting ? 'Sending...' : 'Send Report'}
+              </Button>
+              <Button type="button" className="flex-1" variant="ghost" onClick={() => setShowReportPopup(false)} disabled={reportPosting}>
+                Cancel
+              </Button>
+            </div>
+          </form>
+        </div>
+      )}
     </div>
   );
 };

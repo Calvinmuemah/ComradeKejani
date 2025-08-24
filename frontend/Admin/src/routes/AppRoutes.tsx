@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Routes, Route } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/useAuth';
 import Layout from '../components/layout/Layout';
 import LoginPage from '../pages/auth/LoginPage';
 import Dashboard from '../pages/Dashboard';
@@ -15,16 +15,23 @@ import ZonesPage from '../pages/zones/ZonesPage';
 // ...removed HomepagePage and AIPage imports...
 import UsersPage from '../pages/users/UsersPage';
 import SettingsPage from '../pages/settings/SettingsPage';
+import LoadingScreen from '../components/ui/LoadingScreen';
 
 const AppRoutes: React.FC = () => {
   const { user, isLoading } = useAuth();
+  const [showLogo, setShowLogo] = useState(true);
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
-      </div>
-    );
+  useEffect(() => {
+    // Fade out the logo after 2 seconds
+    const timer = setTimeout(() => {
+      setShowLogo(false);
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (isLoading || showLogo) {
+    return <LoadingScreen message={isLoading ? "Loading data..." : "Welcome to Comrade Kejani"} />;
   }
 
   if (!user) {

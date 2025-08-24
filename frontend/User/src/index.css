@@ -1,3 +1,9 @@
+/* 
+ * Comrade Kejani CSS
+ * This file uses Tailwind CSS directives (@tailwind, @apply).
+ * Custom styles are defined first, followed by Tailwind imports.
+ */
+
 /* Glassmorphism border glow for HouseCard */
 
 /* Card border-only glassmorphism glow (no blur inside) */
@@ -7,17 +13,21 @@
   box-shadow: 0 0 0 0 rgba(0,212,255,0.0), 0 0 0 0 rgba(255,255,255,0.0);
   transition: box-shadow 0.4s;
 }
-.card-glow:hover, .card-glow:focus-within {
+
+/* Dark mode glow */
+.dark .card-glow:hover, .dark .card-glow:focus-within {
   box-shadow:
     0 0 12px 2px rgba(0,212,255,0.25),
     0 0 32px 8px rgba(0,212,255,0.18),
     0 0 64px 16px rgba(255,255,255,0.10);
 }
-.dark .card-glow:hover, .dark .card-glow:focus-within {
+
+/* Light mode glow */
+body.light .card-glow:hover, body.light .card-glow:focus-within {
   box-shadow:
-    0 0 16px 4px rgba(0,212,255,0.30),
-    0 0 48px 16px rgba(0,212,255,0.18),
-    0 0 96px 32px rgba(255,255,255,0.10);
+    0 0 8px 2px rgba(59, 130, 246, 0.08),
+    0 0 16px 4px rgba(59, 130, 246, 0.05),
+    0 8px 24px 0px rgba(0, 0, 0, 0.04);
 }
 
 /* Border light track animation */
@@ -81,65 +91,15 @@
   animation: border-tracer 2s linear infinite;
 }
 
-/* New animated border tab style - CSS only version */
-.animated-border-tab {
-  position: relative;
-  overflow: visible;
-}
-
-.animated-border-tab::before,
-.animated-border-tab::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: 0.5rem;
-  z-index: -1;
-}
-
-/* Base border */
-.animated-border-tab::before {
-  border: 1px solid rgba(59, 130, 246, 0.2);
-}
-
-/* Animated tracer */
-.animated-border-tab::after {
-  z-index: -2;
-  --border-width: 2px;
-  --offset-x: 0px;
-  --offset-y: 0px;
-  --size: 25%;
-  
-  border: none;
-  background: 
-    linear-gradient(to right, #3b82f6 var(--size), transparent 0) 0 calc(0% - var(--offset-y)) / 100% var(--border-width),
-    linear-gradient(to bottom, #3b82f6 var(--size), transparent 0) calc(100% - var(--offset-x)) 0 / var(--border-width) 100%,
-    linear-gradient(to left, #3b82f6 var(--size), transparent 0) 0 calc(100% - var(--offset-y)) / 100% var(--border-width),
-    linear-gradient(to top, #3b82f6 var(--size), transparent 0) calc(0% - var(--offset-x)) 0 / var(--border-width) 100%;
-  background-repeat: no-repeat;
-  filter: drop-shadow(0 0 3px rgba(59, 130, 246, 0.3));
-  animation: trace-border 2s infinite linear;
-}
-
-@keyframes trace-border {
+/* Tab hover animation */
+@keyframes tab-hover {
   0% {
-    --offset-x: 0px;
-    --offset-y: 0px;
-  }
-  25% {
-    --offset-x: 0px;
-    --offset-y: 100%;
-  }
-  50% {
-    --offset-x: 100%;
-    --offset-y: 100%;
-  }
-  75% {
-    --offset-x: 100%;
-    --offset-y: 0px;
+    transform: translateY(0);
+    box-shadow: 0 0 0 rgba(59, 130, 246, 0);
   }
   100% {
-    --offset-x: 0px;
-    --offset-y: 0px;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.1), 0 2px 4px -1px rgba(59, 130, 246, 0.06);
   }
 }
 
@@ -181,43 +141,30 @@
   }
 }
 
+/* Tab hover animation */
+@keyframes tab-hover {
+  0% {
+    transform: translateY(0);
+    box-shadow: 0 0 0 rgba(59, 130, 246, 0);
+  }
+  100% {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.1), 0 2px 4px -1px rgba(59, 130, 246, 0.06);
+  }
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   body {
-    @apply bg-oxford-900 text-blue-100;
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    transition: background-color 0.5s cubic-bezier(.4,0,.2,1), color 0.5s cubic-bezier(.4,0,.2,1);
   }
 
-  .dark body {
-    @apply bg-oxford-900 text-blue-100;
-  }
-
-  :root {
-    --background: 220 10% 7%;
-    --foreground: 210 20% 98%;
-    --card: 215 77% 5%;  /* Matches oxford-900 */
-    --card-foreground: 210 40% 96%; /* Matches blue-100 */
-    --popover: 215 77% 5%;  /* Matches oxford-900 */
-    --popover-foreground: 210 20% 98%;
-    --primary: 217 91% 60%;
-    --primary-foreground: 222 84% 5%;
-    --secondary: 217 32% 17%;
-    --secondary-foreground: 210 20% 98%;
-    --muted: 215 28% 17%;
-    --muted-foreground: 217 10% 65%;
-    --accent: 215 28% 17%;
-    --accent-foreground: 210 20% 98%;
-    --destructive: 0 63% 31%;
-    --destructive-foreground: 210 20% 98%;
-    --border: 215 28% 17%;
-    --input: 215 28% 17%;
-    --ring: 217 91% 60%;
-    --radius: 0.5rem;
-  }
-
-  body.light {
+  :root, .light {
     --background: 0 0% 100%;
     --foreground: 222 84% 5%;
     --card: 0 0% 100%;
@@ -237,10 +184,11 @@
     --border: 214 32% 91%;
     --input: 214 32% 91%;
     --ring: 217 91% 60%;
+    --radius: 0.5rem;
   }
 
-  body.dark {
-    --background: 220 10% 7%;
+  .dark {
+    --background: 219 100% 7%; /* #000A17 - oxford-900 color */
     --foreground: 210 20% 98%;
     --card: 220 13% 9%;
     --card-foreground: 210 20% 98%;
@@ -323,9 +271,26 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+/* Light mode glass effect */
+body.light .glass {
+  background: rgba(255, 255, 255, 1);
+  backdrop-filter: none;
+  border: 1px solid rgba(240, 240, 240, 1);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+}
+
 /* Gradient text */
 .gradient-text {
   @apply bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent;
+}
+
+/* Light mode gradient text - slightly different colors for better visibility */
+body.light .gradient-text {
+  background-image: linear-gradient(to right, #3b82f6, #8b5cf6);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  font-weight: 600;
 }
 
 /* Hover animations */

@@ -3,10 +3,13 @@ import { Link, useLocation } from 'react-router-dom';
 import { X, Home, Map, BarChart3, Users, Heart, Bell, Settings, HelpCircle } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { useStore } from '../../store/useStore';
+import { useTheme } from '../../contexts/useTheme';
 
 export const Sidebar: React.FC = () => {
   const location = useLocation();
   const { sidebarOpen, toggleSidebar } = useStore();
+  const { theme } = useTheme();
+  const isLight = theme === 'light';
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -36,9 +39,10 @@ export const Sidebar: React.FC = () => {
 
       {/* Sidebar */}
       <aside className={`
-        fixed top-0 left-0 z-50 h-full w-64 bg-background border-r transform transition-transform duration-300 ease-in-out
+        fixed top-0 left-0 z-50 h-full w-64 transform transition-transform duration-300 ease-in-out
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
         md:relative md:translate-x-0
+        ${isLight ? 'bg-white border-r border-gray-200' : 'bg-background border-r border-gray-800'}
       `}>
         <div className="flex h-full flex-col">
           {/* Header */}

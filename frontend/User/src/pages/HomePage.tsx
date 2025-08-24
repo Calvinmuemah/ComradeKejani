@@ -254,7 +254,7 @@ export const HomePage: React.FC = () => {
   // Skip loading screen for background refreshes - only show on first load when there are no houses
   if (loading && houses.length === 0) {
     return (
-      <div className={`container mx-auto px-4 py-8 ${isLight ? 'bg-white' : 'bg-oxford-900'}`}>
+  <div className={`w-full px-4 md:px-8 py-8 ${isLight ? 'bg-white' : 'bg-oxford-900'}`}>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[...Array(6)].map((_, i) => (
             <div key={i} className={`h-80 rounded-lg animate-pulse ${isLight ? 'bg-gray-100' : 'bg-muted'}`} />
@@ -266,7 +266,7 @@ export const HomePage: React.FC = () => {
 
   if (error) {
     return (
-      <div className={`container mx-auto px-4 py-8 ${isLight ? 'bg-white' : 'bg-oxford-900'}`}>
+  <div className={`w-full px-4 md:px-8 py-8 ${isLight ? 'bg-white' : 'bg-oxford-900'}`}>
         <div className="text-center">
           <p className="text-destructive">{error}</p>
           <Button onClick={() => fetchHouses()} className="mt-4">

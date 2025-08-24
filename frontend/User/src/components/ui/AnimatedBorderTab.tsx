@@ -26,7 +26,7 @@ export const AnimatedBorderTab: React.FC<AnimatedBorderTabProps> = ({
     <div
       className={`relative rounded-lg px-4 py-2 transition-all duration-300 ${className} ${
         isSelected 
-          ? `text-primary font-medium ${isLightMode ? 'bg-primary/5 shadow-sm' : 'bg-primary/10'}` 
+          ? `text-primary font-medium border border-primary/40 ${isLightMode ? 'bg-primary/5 shadow-sm' : 'bg-primary/10'} animate-[headerGlowPulse_3.6s_ease-in-out_infinite]` 
           : `text-muted-foreground hover:text-foreground ${
               isLightMode 
                 ? 'hover:bg-gray-50 hover:shadow-sm' 
@@ -40,14 +40,7 @@ export const AnimatedBorderTab: React.FC<AnimatedBorderTabProps> = ({
     >
       {children}
       
-      {isSelected && (
-        <div className={`absolute inset-0 z-0 rounded-lg border ${
-          isLightMode 
-            ? 'border-primary/30' 
-            : 'border-primary/30'
-        }`}>
-        </div>
-      )}
+  {/* Remove inner border overlay since active style now includes border + animation */}
     </div>
   );
 };

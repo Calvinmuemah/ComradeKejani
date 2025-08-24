@@ -41,7 +41,7 @@ export const ComparePage: React.FC = () => {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
+  <div className="w-full px-4 md:px-8 py-8">
       <div className="mb-8 flex items-center justify-between">
         <h1 className="text-3xl font-bold">Compare Houses</h1>
         <div className="flex gap-2">
@@ -95,8 +95,8 @@ export const ComparePage: React.FC = () => {
                     </div>
                     <div className="flex items-center gap-2">
                       <Star className="h-4 w-4 text-yellow-500" />
-                      <span className="font-medium">{house.rating.toFixed(1)}</span>
-                      <span className="text-xs">({house.reviews.length} reviews)</span>
+                      <span className="font-medium">{typeof house.rating === 'number' ? house.rating.toFixed(1) : 'N/A'}</span>
+                      <span className="text-xs">({Array.isArray(house.reviews) ? house.reviews.length : 0} reviews)</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="font-bold text-primary text-lg">KSh {house.price.toLocaleString()}</span>

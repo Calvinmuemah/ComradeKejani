@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Heart, MapPin, Star, Shield, Wifi, Droplets, Zap, Car, Home as HomeIcon, Shirt } from 'lucide-react';
 import { Card, CardContent } from './ui/Card';
 import { Button } from './ui/Button';
@@ -7,6 +7,7 @@ import { Badge } from './ui/Badge';
 import { House } from '../types';
 import { useStore } from '../store/useStore';
 import { useTheme } from '../contexts/useTheme';
+import { apiService } from '../services/api';
 
 interface HouseCardProps {
   house: House;
@@ -27,6 +28,7 @@ const amenityIcons = {
 export const HouseCard: React.FC<HouseCardProps> = ({ house, showCompareButton = true, onClick }) => {
   const { favorites, addToFavorites, removeFromFavorites, addToCompare, compareList } = useStore();
   const { theme } = useTheme();
+  const navigate = useNavigate();
   const isLight = theme === 'light';
   
   const isFavorited = favorites.some(fav => fav.id === house.id);
@@ -45,6 +47,21 @@ export const HouseCard: React.FC<HouseCardProps> = ({ house, showCompareButton =
   const handleAddToCompare = (e: React.MouseEvent) => {
     e.preventDefault();
     addToCompare(house);
+  };
+
+  const handleViewDetails = (e: React.MouseEvent) => {
+    e.preventDefault();
+    // Track the house view before navigating
+    apiService.incrementHouseView(house.id)
+      .then(() => {
+        // Navigate to the house details page
+        navigate(`/house/${house.id}`);
+      })
+      .catch(error => {
+        console.error('Error tracking house view:', error);
+        // Still navigate even if tracking fails
+        navigate(`/house/${house.id}`);
+      });
   };
 
   const getAmenityIcon = (iconName: string) => {
@@ -75,13 +92,13 @@ export const HouseCard: React.FC<HouseCardProps> = ({ house, showCompareButton =
       style={onClick ? { cursor: 'pointer' } : {}}
     >
       <div className="relative">
-        <Link to={`/house/${house.id}`} tabIndex={-1}>
+        <div onClick={handleViewDetails} tabIndex={-1} className="cursor-pointer">
           <img
             src={images[currentImage] || ''}
             alt={house.title || 'House'}
             className="h-48 w-full object-cover transition-transform duration-300 group-hover:scale-105"
           />
-        </Link>
+        </div>
 
         {/* Carousel Arrows */}
         {hasMultipleImages && (
@@ -221,11 +238,13 @@ export const HouseCard: React.FC<HouseCardProps> = ({ house, showCompareButton =
               >
                 {isInCompare ? 'In Compare' : 'Compare'}
               </Button>
-              <Link to={`/house/${house.id}`} className="flex-1">
-                <Button size="sm" className="w-full">
-                  View Details
-                </Button>
-              </Link>
+              <Button 
+                size="sm" 
+                className="flex-1 w-full"
+                onClick={handleViewDetails}
+              >
+                View Details
+              </Button>
             </div>
           )}
         </div>

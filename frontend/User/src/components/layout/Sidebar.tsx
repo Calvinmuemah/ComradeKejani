@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { X, Home, Map, BarChart3, Users, Heart, Bell, Settings, HelpCircle } from 'lucide-react';
+import { X, Home, Map, BarChart3, Users, Heart, Bell, HelpCircle } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { useStore } from '../../store/useStore';
 import { useTheme } from '../../contexts/useTheme';
@@ -20,12 +20,24 @@ export const Sidebar: React.FC = () => {
     { icon: Users, label: 'Community', path: '/community' },
     { icon: Heart, label: 'Favorites', path: '/favorites' },
     { icon: Bell, label: 'Notifications', path: '/notifications' },
+  { icon: HelpCircle, label: 'About', path: '/about' },
   ];
 
+  // Only keep Help & Support; it now points to /help which renders Safety content
   const bottomItems = [
-    { icon: Settings, label: 'Settings', path: '/settings' },
     { icon: HelpCircle, label: 'Help & Support', path: '/help' },
   ];
+
+  // Ensure the pulse keyframes exist (shared with Header) for sidebar active glow
+  useEffect(() => {
+    const styleId = 'header-action-glow';
+    if (!document.getElementById(styleId)) {
+      const style = document.createElement('style');
+      style.id = styleId;
+      style.textContent = `@keyframes headerGlowPulse {0% {box-shadow:0 0 0 0 rgba(59,130,246,0.45);} 55% {box-shadow:0 0 0 10px rgba(59,130,246,0);} 100% {box-shadow:0 0 0 0 rgba(59,130,246,0);} }`;
+      document.head.appendChild(style);
+    }
+  }, []);
 
   if (!sidebarOpen) return null;
 
@@ -69,9 +81,9 @@ export const Sidebar: React.FC = () => {
                   to={item.path}
                   onClick={toggleSidebar}
                   className={`
-                    flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors
+                    flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors relative
                     ${isActive(item.path)
-                      ? 'text-primary nav-active'
+                      ? 'text-primary nav-active border border-primary/40 bg-primary/10 animate-[headerGlowPulse_3.6s_ease-in-out_infinite]'
                       : 'text-muted-foreground hover:text-foreground hover:bg-accent'
                     }
                   `}
@@ -92,9 +104,9 @@ export const Sidebar: React.FC = () => {
                   to={item.path}
                   onClick={toggleSidebar}
                   className={`
-                    flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors
+                    flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors relative
                     ${isActive(item.path)
-                      ? 'text-primary nav-active'
+                      ? 'text-primary nav-active border border-primary/40 bg-primary/10 animate-[headerGlowPulse_3.6s_ease-in-out_infinite]'
                       : 'text-muted-foreground hover:text-foreground hover:bg-accent'
                     }
                   `}

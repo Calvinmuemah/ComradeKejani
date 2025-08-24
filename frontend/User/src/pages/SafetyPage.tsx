@@ -57,8 +57,7 @@ export const SafetyPage = () => {
     estateCounts[house.location.estate] = (estateCounts[house.location.estate] || 0) + 1;
   });
   return (
-    <div className={`min-h-screen ${theme === 'dark' ? 'bg-oxford-900' : 'bg-white'}`}>
-      <div className="container mx-auto px-4 py-8">
+  <div className={`min-h-screen w-full ${theme === 'dark' ? 'bg-oxford-900' : 'bg-white'} px-4 md:px-8 py-8`}>
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-foreground mb-2">
@@ -270,8 +269,6 @@ export const SafetyPage = () => {
             </Card>
           </div>
         </div>
-      </div>
-      
       {/* Report an Issue Popup */}
       {showReportPopup && (
         <div className={`fixed inset-0 z-50 flex items-center justify-center ${theme === 'dark' ? 'bg-black/60' : 'bg-black/30'}`}>

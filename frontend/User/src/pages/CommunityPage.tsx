@@ -225,7 +225,7 @@ export const CommunityPage = () => {
 
   return (
     <div className={`min-h-screen ${theme === 'dark' ? 'bg-oxford-900' : 'bg-white'}`}>
-      <div className="container mx-auto px-4 py-8">
+  <div className="w-full px-4 md:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-foreground mb-2">
@@ -431,7 +431,7 @@ export const CommunityPage = () => {
                                    {/* Small popup for author name */}
                                    {showReplyPopup && pendingReplyPostId === post.id && (
                                      <form
-                                       className={`absolute left-0 top-12 z-50 ${theme === 'dark' ? 'bg-oxford-800' : 'bg-background'} border border-primary/30 rounded shadow p-3 w-56 animate-fadeIn flex flex-col gap-2`}
+                                      className={`absolute left-0 top-12 z-50 ${theme === 'dark' ? 'bg-oxford-900' : 'bg-white'} border border-primary/30 rounded shadow p-3 w-56 animate-fadeIn flex flex-col gap-2`}
                                        onSubmit={e => { e.preventDefault(); handleReplyAuthorSubmit(); }}
                                      >
                                        <span className="text-sm font-semibold text-center">Enter your name</span>
@@ -441,7 +441,7 @@ export const CommunityPage = () => {
                                          placeholder="Your name"
                                          autoFocus
                                          disabled={posting}
-                                         className="text-sm px-2 py-1"
+                                         className={`text-sm px-2 py-1 ${theme === 'dark' ? 'bg-oxford-900' : 'bg-white'}`}
                                        />
                                        <div className="flex gap-2 mt-1">
                                          <Button type="submit" size="sm" className="flex-1 text-sm py-1" disabled={!replyAuthor.trim() || posting}>
@@ -467,7 +467,7 @@ export const CommunityPage = () => {
                  {/* Inline New Post Form (replaces Modal) */}
                  {showPostModal && (
                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-                     <form onSubmit={handlePostSubmit} className={`w-full max-w-lg mx-auto space-y-6 ${theme === 'dark' ? 'bg-oxford-800' : 'bg-background'} p-6 rounded-lg shadow animate-fadeIn border border-primary/20`}>
+                     <form onSubmit={handlePostSubmit} className={`w-full max-w-lg mx-auto space-y-6 ${theme === 'dark' ? 'bg-oxford-900' : 'bg-white'} p-6 rounded-lg shadow animate-fadeIn border border-primary/20`}>
                        <h2 className="text-2xl font-bold text-center">Create New Post</h2>
                        <div>
                          <label className="block text-sm font-medium mb-1">Title</label>
@@ -477,12 +477,13 @@ export const CommunityPage = () => {
                            placeholder="Enter post title"
                            required
                            disabled={posting}
+                           className={`${theme === 'dark' ? 'bg-oxford-900' : 'bg-white'}`}
                          />
                        </div>
                        <div>
                          <label className="block text-sm font-medium mb-1">Category</label>
                          <select
-                           className={`w-full rounded-md border border-input ${theme === 'dark' ? 'bg-oxford-800' : 'bg-background'} px-3 py-2 text-sm`}
+                           className={`w-full rounded-md border border-input ${theme === 'dark' ? 'bg-oxford-900' : 'bg-white'} px-3 py-2 text-sm`}
                            value={newPost.category}
                            onChange={e => setNewPost({ ...newPost, category: e.target.value })}
                            required
@@ -497,7 +498,7 @@ export const CommunityPage = () => {
                        <div>
                          <label className="block text-sm font-medium mb-1">Content</label>
                          <textarea
-                           className={`w-full rounded-md border border-input ${theme === 'dark' ? 'bg-oxford-800' : 'bg-background'} px-3 py-2 text-sm min-h-[100px]`}
+                           className={`w-full rounded-md border border-input ${theme === 'dark' ? 'bg-oxford-900' : 'bg-white'} px-3 py-2 text-sm min-h-[100px]`}
                            value={newPost.content}
                            onChange={e => setNewPost({ ...newPost, content: e.target.value })}
                            placeholder="Write your post..."
@@ -513,6 +514,7 @@ export const CommunityPage = () => {
                            placeholder="Enter your name"
                            required
                            disabled={posting}
+                           className={`${theme === 'dark' ? 'bg-oxford-900' : 'bg-white'}`}
                          />
                        </div>
                        <div className="flex gap-2">
@@ -592,21 +594,21 @@ export const CommunityPage = () => {
             } finally {
               setReviewPosting(false);
             }
-          }} className={`w-full max-w-md mx-auto space-y-6 ${theme === 'dark' ? 'bg-oxford-800' : 'bg-background'} p-6 rounded-lg shadow animate-fadeIn border border-primary/20`}>
+          }} className={`w-full max-w-md mx-auto space-y-6 ${theme === 'dark' ? 'bg-oxford-900' : 'bg-white'} p-6 rounded-lg shadow animate-fadeIn border border-primary/20`}>
             <h2 className="text-xl font-bold text-center">Write a Review</h2>
             <div>
               <label className="block text-sm font-medium mb-1">Your Name</label>
-              <Input value={reviewData.userName} onChange={e => setReviewData(d => ({ ...d, userName: e.target.value }))} placeholder="Enter your name" required disabled={reviewPosting} />
+              <Input value={reviewData.userName} onChange={e => setReviewData(d => ({ ...d, userName: e.target.value }))} placeholder="Enter your name" required disabled={reviewPosting} className={`${theme === 'dark' ? 'bg-oxford-900' : 'bg-white'}`} />
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Rating</label>
-              <select className={`w-full rounded-md border border-input ${theme === 'dark' ? 'bg-oxford-800' : 'bg-background'} px-3 py-2 text-sm`} value={reviewData.rating} onChange={e => setReviewData(d => ({ ...d, rating: Number(e.target.value) }))} required disabled={reviewPosting}>
+              <select className={`w-full rounded-md border border-input ${theme === 'dark' ? 'bg-oxford-900' : 'bg-white'} px-3 py-2 text-sm`} value={reviewData.rating} onChange={e => setReviewData(d => ({ ...d, rating: Number(e.target.value) }))} required disabled={reviewPosting}>
                 {[5,4,3,2,1].map(r => <option key={r} value={r}>{r} Star{r > 1 ? 's' : ''}</option>)}
               </select>
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Comment</label>
-              <textarea className={`w-full rounded-md border border-input ${theme === 'dark' ? 'bg-oxford-800' : 'bg-background'} px-3 py-2 text-sm min-h-[80px]`} value={reviewData.comment} onChange={e => setReviewData(d => ({ ...d, comment: e.target.value }))} placeholder="Write your review..." required disabled={reviewPosting} />
+              <textarea className={`w-full rounded-md border border-input ${theme === 'dark' ? 'bg-oxford-900' : 'bg-white'} px-3 py-2 text-sm min-h-[80px]`} value={reviewData.comment} onChange={e => setReviewData(d => ({ ...d, comment: e.target.value }))} placeholder="Write your review..." required disabled={reviewPosting} />
             </div>
             <div className="flex gap-2">
               <Button type="submit" className="flex-1" disabled={reviewPosting}>{reviewPosting ? 'Posting...' : 'Post Review'}</Button>
@@ -633,13 +635,13 @@ export const CommunityPage = () => {
                 setReportPosting(false);
               }
             }}
-            className={`w-full max-w-md mx-auto space-y-6 ${theme === 'dark' ? 'bg-oxford-800' : 'bg-background'} p-6 rounded-lg shadow animate-fadeIn border border-primary/20`}
+            className={`w-full max-w-md mx-auto space-y-6 ${theme === 'dark' ? 'bg-oxford-900' : 'bg-white'} p-6 rounded-lg shadow animate-fadeIn border border-primary/20`}
           >
             <h2 className="text-xl font-bold text-center">Report an Issue</h2>
             <div>
               <label className="block text-sm font-medium mb-1">Type of Issue</label>
               <select
-                className={`w-full rounded-md border border-input ${theme === 'dark' ? 'bg-oxford-800' : 'bg-background'} px-3 py-2 text-sm`}
+                className={`w-full rounded-md border border-input ${theme === 'dark' ? 'bg-oxford-900' : 'bg-white'} px-3 py-2 text-sm`}
                 value={reportData.type}
                 onChange={e => setReportData(d => ({ ...d, type: e.target.value }))}
                 required
@@ -654,7 +656,7 @@ export const CommunityPage = () => {
             <div>
               <label className="block text-sm font-medium mb-1">Description</label>
               <textarea
-                className={`w-full rounded-md border border-input ${theme === 'dark' ? 'bg-oxford-800' : 'bg-background'} px-3 py-2 text-sm min-h-[80px]`}
+                className={`w-full rounded-md border border-input ${theme === 'dark' ? 'bg-oxford-900' : 'bg-white'} px-3 py-2 text-sm min-h-[80px]`}
                 value={reportData.description}
                 onChange={e => setReportData(d => ({ ...d, description: e.target.value }))}
                 placeholder="Describe the issue..."
@@ -677,7 +679,7 @@ export const CommunityPage = () => {
       {/* Browse Listings Popup (show all houses) */}
       {showListingsPopup && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-          <div className={`${theme === 'dark' ? 'bg-oxford-800' : 'bg-background'} p-6 rounded-lg shadow border border-primary/20 max-w-4xl w-full animate-fadeIn flex flex-col items-center relative`}>
+          <div className={`${theme === 'dark' ? 'bg-oxford-900' : 'bg-white'} p-6 rounded-lg shadow border border-primary/20 max-w-4xl w-full animate-fadeIn flex flex-col items-center relative`}>
             <h2 className="text-lg font-bold mb-4">Browse Listings</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 w-full max-h-[70vh] overflow-y-auto mb-4">
               {houses.length === 0 ? (
@@ -707,11 +709,8 @@ export const CommunityPage = () => {
       {/* Contact Support Popup */}
       {showSupportPopup && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 animate-fadeIn">
-          <div className={`${theme === 'dark' ? 'bg-oxford-800' : 'bg-background'} p-8 rounded-2xl shadow-2xl border border-primary/20 max-w-3xl w-full animate-slideUp flex flex-col items-center gap-6 relative overflow-hidden`}>
-            <div className="absolute inset-0 pointer-events-none">
-              <div className="absolute -top-10 -left-10 w-40 h-40 bg-primary/10 rounded-full blur-2xl animate-pulse" />
-              <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-blue-400/10 rounded-full blur-2xl animate-pulse" />
-            </div>
+          <div className={`${theme === 'dark' ? 'bg-oxford-900' : 'bg-white'} p-8 rounded-2xl shadow-2xl border border-primary/20 max-w-3xl w-full animate-slideUp flex flex-col items-center gap-6 relative overflow-hidden`}>
+            {/* Decorative background removed for consistent system background */}
             <h2 className="text-2xl font-extrabold mb-2 text-primary drop-shadow animate-fadeInUp">Contact & Emergency Support</h2>
             <div className="w-full text-left space-y-6 z-10 grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* MMUST Emergency Services */}

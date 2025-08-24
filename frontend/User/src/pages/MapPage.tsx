@@ -128,7 +128,7 @@ export const MapPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-oxford-900">
-      <div className="container mx-auto px-4 py-8">
+  <div className="w-full px-4 md:px-8 py-8">
         {/* Header */}
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-blue-100 mb-2">

@@ -26,6 +26,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card'
 import { Input } from '../components/ui/Input'; 
 import { useStore } from '../store/useStore';
 import { apiService } from '../services/api';
+import { useTheme } from '../contexts/useTheme';
 
 // MMUST Library exact coordinates
 const MMUST_LIBRARY_LAT = 0.290482;
@@ -146,6 +147,8 @@ export const HouseDetailPage: React.FC = () => {
   const [reviewRating, setReviewRating] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  // House views state
+  const [houseViews, setHouseViews] = useState({ total: 0, monthly: 0, weekly: 0 });
   type Review = {
     _id: string;
     houseId: string;
@@ -177,6 +180,23 @@ export const HouseDetailPage: React.FC = () => {
       }
     };
     fetchReviews();
+
+    // Track house view and fetch view statistics
+    const trackHouseView = async () => {
+      if (!id) return;
+      try {
+        // Track the view
+        await apiService.incrementHouseView(id);
+        
+        // Fetch view statistics
+        const viewsData = await apiService.getHouseViews(id);
+        setHouseViews(viewsData);
+      } catch (error) {
+        console.error('Error tracking/fetching house views:', error);
+      }
+    };
+    
+    trackHouseView();
   }, [id]);
 
   // Add review handler (real API)
@@ -276,6 +296,8 @@ export const HouseDetailPage: React.FC = () => {
   const [showMapModal, setShowMapModal] = useState(false);
   // State to control map loading spinner
   const [mapLoaded, setMapLoaded] = useState(false);
+  // Theme
+  const { theme } = useTheme();
 
   useEffect(() => {
     // Set up intersection observer to animate when the card comes into view
@@ -327,7 +349,7 @@ export const HouseDetailPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="container mx-auto px-4 py-8">
+  <div className="w-full px-4 md:px-8 py-8">
         <div className="animate-pulse space-y-4">
           <div className="h-8 bg-muted rounded w-1/4" />
           <div className="h-64 bg-muted rounded" />
@@ -339,7 +361,7 @@ export const HouseDetailPage: React.FC = () => {
 
   if (error || !currentHouse) {
     return (
-      <div className="container mx-auto px-4 py-8 text-center">
+  <div className="w-full px-4 md:px-8 py-8 text-center">
         <p className="text-destructive">{error || 'House not found'}</p>
         <Link to="/">
           <Button className="mt-4">Back to Houses</Button>
@@ -349,7 +371,7 @@ export const HouseDetailPage: React.FC = () => {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 space-y-8">
+  <div className="w-full px-4 md:px-8 py-8 space-y-8">
       {/* Header */}
       <div className="flex items-center justify-between">
         <Link to="/">
@@ -765,7 +787,14 @@ export const HouseDetailPage: React.FC = () => {
 
               <Button
                 variant="outline"
-                onClick={() => setShowLandlordDetails(true)}
+                onClick={() => {
+                  // Track landlord view
+                  if (currentHouse.landlord.id) {
+                    apiService.incrementLandlordView(currentHouse.landlord.id)
+                      .catch(err => console.error('Error tracking landlord view:', err));
+                  }
+                  setShowLandlordDetails(true);
+                }}
                 className="w-full"
               >
                 View Landlord Contact Details
@@ -806,7 +835,7 @@ export const HouseDetailPage: React.FC = () => {
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
               <form
                 onSubmit={handleSubmitReview}
-                className="w-full max-w-md mx-auto space-y-6 bg-background p-6 rounded-lg shadow animate-fadeIn border border-primary/20"
+                className={`w-full max-w-md mx-auto space-y-6 ${theme === 'dark' ? 'bg-oxford-900' : 'bg-white'} p-6 rounded-lg shadow animate-fadeIn border border-primary/20`}
               >
                 <h2 className="text-xl font-bold text-center">Write a Review</h2>
                 <div>
@@ -817,12 +846,13 @@ export const HouseDetailPage: React.FC = () => {
                     placeholder="Enter your name"
                     required
                     disabled={submitting}
+                    className={`${theme === 'dark' ? 'bg-oxford-900' : 'bg-white'}`}
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1">Your Review</label>
                   <textarea
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm min-h-[80px]"
+                    className={`w-full rounded-md border border-input ${theme === 'dark' ? 'bg-oxford-900' : 'bg-white'} px-3 py-2 text-sm min-h-[80px]`}
                     value={reviewText}
                     onChange={e => setReviewText(e.target.value)}
                     placeholder="Share your experience..."
@@ -863,7 +893,7 @@ export const HouseDetailPage: React.FC = () => {
           {/* Landlord Details Popup */}
           {showLandlordDetails && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-              <div className="w-full max-w-md mx-auto space-y-4 bg-background p-6 rounded-lg shadow animate-fadeIn border border-primary/20">
+              <div className={`w-full max-w-md mx-auto space-y-4 ${theme === 'dark' ? 'bg-oxford-900' : 'bg-white'} p-6 rounded-lg shadow animate-fadeIn border border-primary/20`}>
                 <div className="flex items-center justify-between">
                   <h2 className="text-xl font-bold">Landlord Contact Details</h2>
                   <button 
@@ -983,7 +1013,9 @@ export const HouseDetailPage: React.FC = () => {
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Views</span>
-                <span className="font-medium">127 this month</span>
+                <span className="font-medium">
+                  {(houseViews?.total ?? 0).toLocaleString()}
+                </span>
               </div>
             </CardContent>
           </Card>

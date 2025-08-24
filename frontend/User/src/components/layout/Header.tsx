@@ -57,6 +57,17 @@ export const Header: React.FC = () => {
     toggleDarkMode(); // Update useStore
   };
 
+  // Inject glow animation keyframes once
+  useEffect(() => {
+    const styleId = 'header-action-glow';
+    if (!document.getElementById(styleId)) {
+      const style = document.createElement('style');
+      style.id = styleId;
+      style.textContent = `@keyframes headerGlowPulse {0% {box-shadow:0 0 0 0 rgba(59,130,246,0.45);} 55% {box-shadow:0 0 0 10px rgba(59,130,246,0);} 100% {box-shadow:0 0 0 0 rgba(59,130,246,0);} }`;
+      document.head.appendChild(style);
+    }
+  }, []);
+
   const isActive = (path: string) => location.pathname === path;
 
   return (
@@ -100,6 +111,11 @@ export const Header: React.FC = () => {
               {/* Using AnimatedBorderTab for "Safety" tab */}
               <AnimatedBorderTab isSelected={isActive('/safety')} className="text-sm font-medium transition-all duration-200">
                 <Link to="/safety" className="flex items-center space-x-2">Safety</Link>
+              </AnimatedBorderTab>
+
+              {/* Using AnimatedBorderTab for "About" tab */}
+              <AnimatedBorderTab isSelected={isActive('/about')} className="text-sm font-medium transition-all duration-200">
+                <Link to="/about" className="flex items-center space-x-2">About</Link>
               </AnimatedBorderTab>
               
               {/* Compare tab, only show if compareList has items */}
@@ -179,20 +195,21 @@ export const Header: React.FC = () => {
           </div>
   {/* Filter Panel removed: now handled by FilterPage route */}
 
-          {/* Action Buttons */}
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" className="md:hidden" onClick={toggleSidebar}>
+          {/* Action Buttons with animated glow wrapper */}
+          <div className="relative flex items-center">
+            <div className="relative flex items-center gap-2 px-3 py-2 rounded-xl border border-primary/40 bg-gradient-to-br from-primary/10 via-transparent to-transparent backdrop-blur-sm animate-[headerGlowPulse_3.5s_ease-in-out_infinite] before:absolute before:inset-0 before:rounded-xl before:pointer-events-none before:bg-[radial-gradient(circle_at_30%_20%,rgba(59,130,246,0.25),transparent_60%)] after:absolute after:-inset-px after:rounded-xl after:pointer-events-none after:bg-[conic-gradient(from_0deg,rgba(59,130,246,0.4),transparent_25%,transparent_75%,rgba(59,130,246,0.4))] after:opacity-0 group-hover:after:opacity-40 after:transition-opacity after:duration-700 overflow-hidden">
+            <Button variant="ghost" size="icon" className="md:hidden relative z-10" onClick={toggleSidebar}>
               <Menu className="h-5 w-5" />
             </Button>
 
             <Link to="/favorites">
-              <Button variant="ghost" size="icon">
+              <Button variant="ghost" size="icon" className="relative z-10">
                 <Heart className="h-5 w-5" />
               </Button>
             </Link>
 
             <Link to="/notifications">
-              <Button variant="ghost" size="icon" className="relative">
+              <Button variant="ghost" size="icon" className="relative z-10">
                 <Bell className="h-5 w-5" />
                 {unreadCount > 0 && (
                   <span className="absolute -top-1.5 -right-1.5 h-3 w-3 rounded-full bg-green-500 border-2 border-background" />
@@ -201,9 +218,10 @@ export const Header: React.FC = () => {
             </Link>
 
             {/* Theme Toggle Button */}
-            <Button variant="ghost" size="icon" onClick={handleThemeToggle} aria-label="Toggle theme">
+            <Button variant="ghost" size="icon" onClick={handleThemeToggle} aria-label="Toggle theme" className="relative z-10">
               {theme === 'light' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
             </Button>
+            </div>
           </div>
         </div>
       </div>

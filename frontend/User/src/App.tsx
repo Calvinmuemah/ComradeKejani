@@ -10,8 +10,12 @@ import { NotificationsPage } from './pages/NotificationsPage';
 import { InsightsPage } from './pages/InsightsPage';
 import { CommunityPage } from './pages/CommunityPage';
 import { SafetyPage } from './pages/SafetyPage';
+import { AboutPage } from './pages/AboutPage';
 import { ComparePage } from './pages/ComparePage';
 import FilterPage from './pages/FilterPage';
+import TermsPage from './pages/TermsPage';
+import PrivacyPage from './pages/PrivacyPage';
+import LicensingPage from './pages/LicensingPage';
 import { useStore } from './store/useStore';
 import { useTheme } from './contexts/useTheme';
 
@@ -43,22 +47,15 @@ function App() {
                 <Route path="/insights" element={<InsightsPage />} />
                 <Route path="/community" element={<CommunityPage />} />
                 <Route path="/safety" element={<SafetyPage />} />
+                <Route path="/about" element={<AboutPage />} />
+                <Route path="/terms" element={<TermsPage />} />
+                <Route path="/privacy" element={<PrivacyPage />} />
+                <Route path="/licensing" element={<LicensingPage />} />
                 <Route path="/compare" element={<ComparePage />} />
                 <Route path="/filter" element={<FilterPage />} />
                 
-                {/* Placeholder routes for future features */}
-                <Route path="/settings" element={
-                  <div className="container mx-auto px-4 py-8">
-                    <h1 className="text-3xl font-bold">Settings</h1>
-                    <p className="text-muted-foreground mt-2">Settings page coming soon...</p>
-                  </div>
-                } />
-                <Route path="/help" element={
-                  <div className="container mx-auto px-4 py-8">
-                    <h1 className="text-3xl font-bold">Help & Support</h1>
-                    <p className="text-muted-foreground mt-2">Help documentation coming soon...</p>
-                  </div>
-                } />
+                {/* Help now reuses Safety page content; Settings removed until implemented */}
+                <Route path="/help" element={<SafetyPage />} />
               </Routes>
             </main>
           </div>

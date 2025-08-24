@@ -113,6 +113,26 @@ export interface PopularEstateResponse {
   popularity?: number;
 }
 
+// New API response types for insights
+export interface EstateInsightResponse {
+  estate: string;
+  views: number;
+  houseTypes: string[];
+}
+
+export interface PopularEstatesResponseData {
+  popularEstates: EstateInsightResponse[];
+}
+
+export interface PriceTrendInsightResponse {
+  month: string;
+  averagePrice: number;
+}
+
+export interface PriceTrendsResponseData {
+  priceTrends: PriceTrendInsightResponse[];
+}
+
 export interface PriceTrendResponse {
   estate: string;
   houseType: string;

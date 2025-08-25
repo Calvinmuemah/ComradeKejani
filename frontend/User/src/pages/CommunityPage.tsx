@@ -834,6 +834,35 @@ export const CommunityPage = () => {
                 ) : (
                   allReviews.slice(0, 5).map((review) => (
                     <div key={review.id} className="p-3 border rounded-lg relative">
+                      {/* Curved corner borders */}
+                      {/* Top left */}
+                      <div className="absolute top-0 left-0 w-8 h-8">
+                        <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M1 31C1 14.4315 14.4315 1 31 1" stroke="rgba(99, 102, 241, 0.4)" strokeWidth="2" strokeLinecap="round" />
+                        </svg>
+                      </div>
+                      
+                      {/* Top right */}
+                      <div className="absolute top-0 right-0 w-8 h-8">
+                        <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M31 31C14.4315 31 1 17.5685 1 1" stroke="rgba(99, 102, 241, 0.4)" strokeWidth="2" strokeLinecap="round" />
+                        </svg>
+                      </div>
+                      
+                      {/* Bottom left */}
+                      <div className="absolute bottom-0 left-0 w-8 h-8">
+                        <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M1 1C17.5685 1 31 14.4315 31 31" stroke="rgba(99, 102, 241, 0.4)" strokeWidth="2" strokeLinecap="round" />
+                        </svg>
+                      </div>
+                      
+                      {/* Bottom right */}
+                      <div className="absolute bottom-0 right-0 w-8 h-8">
+                        <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M31 1C31 17.5685 17.5685 31 1 31" stroke="rgba(99, 102, 241, 0.4)" strokeWidth="2" strokeLinecap="round" />
+                        </svg>
+                      </div>
+                      
                       {recentReviewsStale && <span className="absolute top-1 right-1 text-[9px] text-muted-foreground">updating…</span>}
                       <div className="flex items-center gap-2 mb-2">
                         <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold text-primary">

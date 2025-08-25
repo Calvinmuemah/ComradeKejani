@@ -27,10 +27,17 @@ exports.getReviewsByHouse = async (req, res) => {
 exports.updateReview = async (req, res) => {
     try {
         const { reviewId } = req.params;
-        const { rating, comment } = req.body;
+        const updates = req.body;
+        
+        // If status is being updated, add moderation metadata
+        if (updates.status) {
+            updates.moderatedBy = req.user?.name || 'Admin';
+            updates.moderatedAt = new Date();
+        }
+        
         const review = await Review.findByIdAndUpdate(
             reviewId,
-            { rating, comment },
+            updates,
             { new: true }
         );
         if (!review) return res.status(404).json({ error: 'Review not found' });

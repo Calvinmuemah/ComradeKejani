@@ -1,6 +1,6 @@
 import React, { useState, useEffect, ReactNode } from 'react';
 import { User, UserRole, Permission } from '../types';
-import { API_ENDPOINTS, storeAuthToken, clearAuthSession } from '../lib/api';
+import { API_ENDPOINTS, storeAuthToken, clearAuthSession, fetchAdminProfile } from '../lib/api';
 import { AuthContext, AuthContextType } from './AuthContextStore';
 
 // Remove mockUsers. Use real API.
@@ -57,28 +57,23 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       if (!response.ok) {
         throw new Error((data && data.message) || 'Invalid credentials');
       }
-      if (!data.token) {
-        throw new Error('No token returned from server');
+      if (!data || !data.token || !data._id) {
+        throw new Error('Incomplete login response');
       }
       storeAuthToken(data.token);
-      setUser({
-        id: '',
-        email,
-        name: '',
+      const mapped: User = {
+        id: data._id,
+        email: data.email,
+        name: data.name || '',
+        phone: data.phone,
+        avatar: data.avatar || null,
         role: UserRole.SUPER_ADMIN,
         isActive: true,
-        createdAt: new Date().toISOString(),
-        permissions: Object.values(Permission),
-      });
-      sessionStorage.setItem('kejani_admin_user', JSON.stringify({
-        id: '',
-        email,
-        name: '',
-        role: UserRole.SUPER_ADMIN,
-        isActive: true,
-        createdAt: new Date().toISOString(),
-        permissions: Object.values(Permission),
-      }));
+        createdAt: data.createdAt || new Date().toISOString(),
+        permissions: Object.values(Permission)
+      };
+      setUser(mapped);
+      sessionStorage.setItem('kejani_admin_user', JSON.stringify(mapped));
     } catch (error: unknown) {
       setIsLoading(false);
       throw error;
@@ -99,13 +94,36 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return user?.role === role;
   };
 
+  const refreshProfile = async () => {
+    if(!user?.id) return;
+    try {
+      const profile = await fetchAdminProfile(user.id);
+      const updated: User = {
+        id: profile._id,
+        email: profile.email,
+        name: profile.name,
+        phone: profile.phone,
+        avatar: profile.avatar || null,
+        role: user.role,
+        isActive: user.isActive,
+        createdAt: profile.createdAt,
+        permissions: user.permissions
+      };
+      setUser(updated);
+      sessionStorage.setItem('kejani_admin_user', JSON.stringify(updated));
+    } catch {
+      // ignore fetch errors silently or log
+    }
+  };
+
   const value: AuthContextType = {
     user,
     isLoading,
     login,
     logout,
     hasPermission,
-    hasRole
+    hasRole,
+    refreshProfile
   };
 
   return (

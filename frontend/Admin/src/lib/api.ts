@@ -6,6 +6,7 @@ export const API_BASE_URL = 'https://comradekejani-k015.onrender.com/api/v1';
 export const API_ENDPOINTS = {
   // Auth
   login: `${API_BASE_URL}/admin/login`,
+  adminUserById: (id: string | number) => `${API_BASE_URL}/admin/${id}`,
   // Users
   users: `${API_BASE_URL}/users`,
   userById: (id: string | number) => `${API_BASE_URL}/users/${id}`,
@@ -46,6 +47,41 @@ export const API_ENDPOINTS = {
   // Reported Issues (user submitted safety reports)
   reportIssuesGetAll: `${API_BASE_URL}/reports/getAll`,
 };
+
+// --- Admin Profile ---
+export interface AdminProfile {
+  _id: string;
+  name: string;
+  email: string;
+  phone: string;
+  avatar?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UpdateAdminProfilePayload {
+  name?: string;
+  email?: string;
+  phone?: string;
+  avatar?: string;
+}
+
+export async function fetchAdminProfile(userId: string): Promise<AdminProfile> {
+  const res = await apiFetch(API_ENDPOINTS.adminUserById(userId), { auth: true });
+  if(!res.ok) throw new Error('Failed to load profile');
+  return res.json();
+}
+
+export async function updateAdminProfile(userId: string, payload: UpdateAdminProfilePayload): Promise<AdminProfile> {
+  const res = await apiFetch(API_ENDPOINTS.adminUserById(userId), {
+    method: 'PUT',
+    auth: true,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  if(!res.ok) throw new Error('Failed to update profile');
+  return res.json();
+}
 
 
 // --- Auth Helpers ---

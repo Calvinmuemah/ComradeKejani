@@ -8,6 +8,7 @@ export interface AuthContextType {
   logout: () => void;
   hasPermission: (permission: Permission) => boolean;
   hasRole: (role: UserRole) => boolean;
+  refreshProfile?: () => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);

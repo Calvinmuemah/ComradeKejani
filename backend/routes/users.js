@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const { register, login, getUserDetails, updateUser } = require('../controllers/users');
+const { register, login, getUserDetails, updateUser, listAdmins } = require('../controllers/users');
 
+router.get('/', listAdmins); // list all admins
 router.post('/register', register);
 router.post('/login', login);
 router.get('/:userId', getUserDetails);

@@ -38,6 +38,13 @@ export const API_ENDPOINTS = {
   zones: `${API_BASE_URL}/zones`,
   // Settings
   settings: `${API_BASE_URL}/settings`,
+  // Notifications (safety alerts)
+  notificationsCreate: `${API_BASE_URL}/notifications/create`,
+  notificationsGetAll: `${API_BASE_URL}/notifications/getAll`,
+  notificationsUpdate: (id: string | number) => `${API_BASE_URL}/notifications/updateNotification/${id}`,
+  notificationsDelete: (id: string | number) => `${API_BASE_URL}/notifications/deleteNotification/${id}`,
+  // Reported Issues (user submitted safety reports)
+  reportIssuesGetAll: `${API_BASE_URL}/reports/getAll`,
 };
 
 
@@ -162,6 +169,38 @@ export async function fetchWithAuth(url: string, options: RequestInit = {}): Pro
 
 // --- Centralized API Functions ---
 import type { Landlord } from '../types';
+// --- Types for Notifications & Report Issues ---
+export interface NotificationItem {
+  _id: string;
+  type: 'new-listing' | 'price-drop' | 'safety-alert' | string; // allow passthrough
+  title: string;
+  message: string;
+  houseId?: string;
+  startAt?: string;
+  endAt?: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface CreateNotificationPayload {
+  title: string;
+  message: string;
+  type?: 'safety-alert' | 'new-listing' | 'price-drop'; // default safety-alert in UI
+  houseId?: string;
+  startAt?: string;
+  endAt?: string; // optional expiry
+}
+
+export type UpdateNotificationPayload = Partial<CreateNotificationPayload>;
+
+export interface SafetyIssueItem {
+  _id: string;
+  description: string;
+  type: string; // backend enum mixed case; keep string
+  verified: boolean;
+  createdAt: string;
+  updatedAt?: string;
+}
 // Local form data type for house creation (matches AddHousePage structure)
 export interface CreateHouseFormData {
   title: string;
@@ -290,6 +329,51 @@ export async function updateHouse(id: string, payload: UpdateHousePayload): Prom
   });
   if (!res.ok) throw new Error('Failed to update house');
   return res.json() as Promise<UpdateHouseResponse>;
+}
+
+// --- Notifications (Safety Alerts) ---
+export async function fetchNotifications(): Promise<NotificationItem[]> {
+  const res = await apiFetch(API_ENDPOINTS.notificationsGetAll, { auth: true });
+  if (!res.ok) throw new Error('Failed to fetch notifications');
+  return res.json();
+}
+
+export async function createNotification(payload: CreateNotificationPayload): Promise<NotificationItem> {
+  const body = { type: payload.type || 'safety-alert', title: payload.title, message: payload.message, houseId: payload.houseId };
+  const res = await apiFetch(API_ENDPOINTS.notificationsCreate, {
+    method: 'POST',
+    auth: true,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+    logBody: true,
+  });
+  if (!res.ok) throw new Error('Failed to create notification');
+  return res.json();
+}
+
+export async function updateNotification(id: string, payload: UpdateNotificationPayload): Promise<NotificationItem> {
+  const res = await apiFetch(API_ENDPOINTS.notificationsUpdate(id), {
+    method: 'PUT',
+    auth: true,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+    logBody: true,
+  });
+  if (!res.ok) throw new Error('Failed to update notification');
+  return res.json();
+}
+
+export async function deleteNotification(id: string): Promise<{ message: string }> {
+  const res = await apiFetch(API_ENDPOINTS.notificationsDelete(id), { method: 'DELETE', auth: true });
+  if (!res.ok) throw new Error('Failed to delete notification');
+  return res.json();
+}
+
+// --- Report Issues ---
+export async function fetchReportIssues(): Promise<SafetyIssueItem[]> {
+  const res = await apiFetch(API_ENDPOINTS.reportIssuesGetAll, { auth: true });
+  if (!res.ok) throw new Error('Failed to fetch reported issues');
+  return res.json();
 }
 
 // Fetch views count for a house (returns array or object with count)

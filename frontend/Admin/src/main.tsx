@@ -3,9 +3,12 @@ import { createRoot } from 'react-dom/client';
 import './lib/fetch-logger'; // install global fetch logger
 import App from './App.tsx';
 import './index.css';
+import { ToastProvider } from './components/ui/Toast';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
+    <ToastProvider>
+      <App />
+    </ToastProvider>
   </StrictMode>
 );

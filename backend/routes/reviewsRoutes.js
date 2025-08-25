@@ -22,6 +22,15 @@ router.get('/recent', reviewsController.getRecentReviews);
 // AI recommendations based on houses with most reviews (public)
 router.get('/top', reviewController.getRecentReviewedHouses);
 
+// Get all reviews for admin dashboard (admin only)
+router.get('/', auth, reviewsController.getAllReviews);
+
+// Approve a review (admin only)
+router.put('/:reviewId/approve', auth, reviewsController.approveReview);
+
+// Reject a review (admin only)
+router.put('/:reviewId/reject', auth, reviewsController.rejectReview);
+
 module.exports = router;
 
 // Reviews endpoints
@@ -31,3 +40,6 @@ module.exports = router;
 // /api/v1/reviews/review/:reviewId
 // /api/v1/reviews/recent
 // /api/v1/reviews/top
+// /api/v1/reviews/
+// /api/v1/reviews/:reviewId/approve
+// /api/v1/reviews/:reviewId/reject

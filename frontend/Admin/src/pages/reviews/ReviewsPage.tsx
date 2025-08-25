@@ -1,19 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
-  MessageSquare, 
   Star, 
-  ThumbsUp, 
-  ThumbsDown, 
   Eye, 
-  Edit, 
-  Trash2,
   Search,
-  Filter,
   CheckCircle,
   XCircle,
   Clock,
-  Flag,
-  User
+  Flag
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -22,71 +15,243 @@ import { Badge } from '../../components/ui/Badge';
 import { Modal } from '../../components/ui/Modal';
 import { ReviewStatus, ReviewSource } from '../../types';
 import { formatDate } from '../../lib/utils';
+import { useAuth } from '../../contexts/useAuth';
+import { API_ENDPOINTS } from '../../lib/api';
+import useToast from '../../components/ui/useToast';
+import ToastContainer from '../../components/ui/ToastContainer';
 
-// Mock reviews data
-const mockReviews = [
-  {
-    id: '1',
-    listingId: '1',
-    listingTitle: '2 Bedroom Apartment near MMUST Gate B',
-    rating: 4,
-    text: 'Great place to stay! The landlord is very responsive and the house is clean. Water is available most of the time and the location is perfect for students.',
-    tags: ['clean', 'responsive landlord', 'good location'],
-    source: ReviewSource.WEB_FORM,
-    deviceId: 'device_123',
-    status: ReviewStatus.APPROVED,
-    createdAt: '2024-01-15T10:30:00Z',
-    moderatedBy: 'Super Admin',
-    moderatedAt: '2024-01-15T11:00:00Z'
-  },
-  {
-    id: '2',
-    listingId: '2',
-    listingTitle: 'Single Room with WiFi - Kefinco Estate',
-    rating: 2,
-    text: 'The room is okay but there are frequent water shortages. The WiFi is not as fast as advertised. Landlord takes time to respond to issues.',
-    tags: ['water issues', 'slow wifi', 'unresponsive landlord'],
-    source: ReviewSource.WEB_FORM,
-    deviceId: 'device_456',
-    status: ReviewStatus.PENDING,
-    createdAt: '2024-01-15T09:15:00Z'
-  },
-  {
-    id: '3',
-    listingId: '3',
-    listingTitle: 'Bedsitter near Matatu Stage',
-    rating: 5,
-    text: 'Excellent value for money! Everything works perfectly and the landlord is very helpful. Highly recommend this place.',
-    tags: ['value for money', 'helpful landlord', 'everything works'],
-    source: ReviewSource.SURVEY,
-    deviceId: 'device_789',
-    status: ReviewStatus.APPROVED,
-    createdAt: '2024-01-14T16:22:00Z',
-    moderatedBy: 'Super Admin',
-    moderatedAt: '2024-01-14T17:00:00Z'
-  },
-  {
-    id: '4',
-    listingId: '1',
-    listingTitle: '2 Bedroom Apartment near MMUST Gate B',
-    rating: 1,
-    text: 'This is a scam! The photos are fake and the actual place is completely different. The landlord is fraudulent.',
-    tags: ['scam', 'fake photos', 'fraudulent'],
-    source: ReviewSource.WEB_FORM,
-    deviceId: 'device_101',
-    status: ReviewStatus.REJECTED,
-    createdAt: '2024-01-13T14:45:00Z',
-    moderatedBy: 'Super Admin',
-    moderatedAt: '2024-01-13T15:00:00Z'
-  }
-];
+// Define a type for our review as it appears in the UI
+interface Review {
+  id: string;
+  listingId: string;
+  listingTitle: string;
+  rating: number;
+  text: string;
+  tags?: string[];
+  source: ReviewSource;
+  deviceId: string;
+  status: ReviewStatus;
+  createdAt: string;
+  moderatedBy?: string;
+  moderatedAt?: string;
+}
+
+// Define the shape of the review data from the API
+interface ApiReviewHouseId {
+  _id?: string;
+  title?: string;
+}
+
+interface ApiReview {
+  _id?: string;
+  id?: string;
+  houseId?: ApiReviewHouseId | string;
+  rating: number;
+  comment?: string;
+  text?: string;
+  tags?: string[];
+  source?: string;
+  deviceId?: string;
+  status?: string;
+  createdAt: string;
+  moderatedBy?: string;
+  moderatedAt?: string;
+}
 
 const ReviewsPage: React.FC = () => {
+  const { isLoading: authLoading } = useAuth();
+  const { toasts, addToast, removeToast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [ratingFilter, setRatingFilter] = useState<string>('all');
-  const [selectedReview, setSelectedReview] = useState<any>(null);
+  const [selectedReview, setSelectedReview] = useState<Review | null>(null);
   const [showReviewModal, setShowReviewModal] = useState(false);
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [stats, setStats] = useState({
+    pending: 0,
+    approved: 0,
+    rejected: 0,
+    averageRating: 0
+  });
+
+  useEffect(() => {
+    if (!authLoading) {
+      fetchReviews();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authLoading]);
+
+  const fetchReviews = async () => {
+    try {
+      setLoading(true);
+      
+      // Get auth token from session storage
+      const token = sessionStorage.getItem('authToken');
+      
+      // Use the authenticated endpoint with proper Authorization header
+      const response = await fetch(API_ENDPOINTS.reviews, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) {
+        // If unauthorized, try the public endpoint as fallback
+        if (response.status === 401) {
+          console.warn('Unauthorized access to admin reviews endpoint, falling back to public endpoint');
+          return fetchPublicReviews();
+        }
+        throw new Error(`Failed to fetch reviews: ${response.status} ${response.statusText}`);
+      }
+      
+      // Log the response for debugging
+      const responseText = await response.text();
+      console.log('API Response:', responseText);
+      
+      let apiReviews: ApiReview[];
+      try {
+        apiReviews = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error('Error parsing JSON:', parseError);
+        addToast('Invalid JSON response from server', 'error');
+        throw new Error('Invalid JSON response from server');
+      }
+      
+      // Transform the data to match our Review interface
+      const formattedReviews: Review[] = apiReviews.map(apiReview => {
+        // Extract the houseId information
+        let listingId = '';
+        let listingTitle = 'Unknown Property';
+        
+        if (typeof apiReview.houseId === 'object' && apiReview.houseId !== null) {
+          const houseIdObj = apiReview.houseId as ApiReviewHouseId;
+          listingId = houseIdObj._id || '';
+          listingTitle = houseIdObj.title || 'Unknown Property';
+        } else if (typeof apiReview.houseId === 'string') {
+          listingId = apiReview.houseId;
+        }
+        
+        return {
+          id: apiReview._id || apiReview.id || '',
+          listingId,
+          listingTitle,
+          rating: apiReview.rating,
+          text: apiReview.comment || apiReview.text || '',
+          tags: apiReview.tags || [],
+          source: (apiReview.source as ReviewSource) || ReviewSource.WEB_FORM,
+          deviceId: apiReview.deviceId || `device_${Math.random().toString(36).substring(2, 8)}`,
+          status: (apiReview.status as ReviewStatus) || ReviewStatus.PENDING,
+          createdAt: apiReview.createdAt,
+          moderatedBy: apiReview.moderatedBy,
+          moderatedAt: apiReview.moderatedAt
+        };
+      });
+      
+      processReviews(formattedReviews);
+    } catch (error) {
+      console.error('Error fetching reviews:', error);
+      addToast(`Failed to fetch reviews: ${error instanceof Error ? error.message : 'Unknown error'}`, 'error');
+      // Set empty reviews but don't crash the UI
+      setReviews([]);
+      setStats({
+        pending: 0,
+        approved: 0,
+        rejected: 0,
+        averageRating: 0
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Fallback to public endpoint if auth fails
+  const fetchPublicReviews = async () => {
+    try {
+      const response = await fetch(API_ENDPOINTS.reviewsRecent);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch public reviews: ${response.status} ${response.statusText}`);
+      }
+      
+      const responseText = await response.text();
+      console.log('Public API Response:', responseText);
+      
+      let apiReviews: ApiReview[];
+      try {
+        apiReviews = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error('Error parsing JSON:', parseError);
+        throw new Error('Invalid JSON response from server');
+      }
+      
+      // Transform the data to match our Review interface
+      const formattedReviews: Review[] = apiReviews.map(apiReview => {
+        // Extract the houseId information
+        let listingId = '';
+        let listingTitle = 'Unknown Property';
+        
+        if (typeof apiReview.houseId === 'object' && apiReview.houseId !== null) {
+          const houseIdObj = apiReview.houseId as ApiReviewHouseId;
+          listingId = houseIdObj._id || '';
+          listingTitle = houseIdObj.title || 'Unknown Property';
+        } else if (typeof apiReview.houseId === 'string') {
+          listingId = apiReview.houseId;
+        }
+        
+        return {
+          id: apiReview._id || apiReview.id || '',
+          listingId,
+          listingTitle,
+          rating: apiReview.rating,
+          text: apiReview.comment || apiReview.text || '',
+          tags: apiReview.tags || [],
+          source: (apiReview.source as ReviewSource) || ReviewSource.WEB_FORM,
+          deviceId: apiReview.deviceId || `device_${Math.random().toString(36).substring(2, 8)}`,
+          status: (apiReview.status as ReviewStatus) || ReviewStatus.PENDING,
+          createdAt: apiReview.createdAt,
+          moderatedBy: apiReview.moderatedBy,
+          moderatedAt: apiReview.moderatedAt
+        };
+      });
+      
+      processReviews(formattedReviews);
+    } catch (error) {
+      console.error('Error fetching public reviews:', error);
+      setReviews([]);
+      setStats({
+        pending: 0,
+        approved: 0,
+        rejected: 0,
+        averageRating: 0
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Process and set the reviews data
+  const processReviews = (formattedReviews: Review[]) => {
+    setReviews(formattedReviews);
+    
+    // Calculate stats
+    const pending = formattedReviews.filter((r) => r.status === ReviewStatus.PENDING).length;
+    const approved = formattedReviews.filter((r) => r.status === ReviewStatus.APPROVED).length;
+    const rejected = formattedReviews.filter((r) => r.status === ReviewStatus.REJECTED).length;
+    const avgRating = approved > 0 
+      ? (formattedReviews.filter((r) => r.status === ReviewStatus.APPROVED)
+          .reduce((acc: number, r) => acc + r.rating, 0) / approved).toFixed(1)
+      : '0.0';
+    
+    setStats({
+      pending,
+      approved,
+      rejected,
+      averageRating: Number(avgRating)
+    });
+  };
 
   const getStatusBadge = (status: ReviewStatus) => {
     const variants = {
@@ -135,22 +300,114 @@ const ReviewsPage: React.FC = () => {
     );
   };
 
-  const filteredReviews = mockReviews.filter(review => {
+  const filteredReviews = reviews.filter(review => {
     const matchesSearch = review.text.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          review.listingTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         review.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
+                         (review.tags && review.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase())));
     const matchesStatus = statusFilter === 'all' || review.status === statusFilter;
     const matchesRating = ratingFilter === 'all' || review.rating.toString() === ratingFilter;
     return matchesSearch && matchesStatus && matchesRating;
   });
 
-  const handleReviewAction = (reviewId: string, action: 'approve' | 'reject') => {
-    console.log(`${action} review ${reviewId}`);
-    // Implementation would update the review status
+  const handleReviewAction = async (reviewId: string, action: 'approve' | 'reject') => {
+    try {
+      setActionLoading(reviewId);
+      
+      // Get auth token from session storage
+      const token = sessionStorage.getItem('authToken');
+      
+      if (!token) {
+        addToast('Authentication token is missing. Please log in again.', 'error');
+        throw new Error('Authentication token is missing. Please log in again.');
+      }
+      
+      // Use the authenticated endpoint for approving/rejecting reviews
+      const response = await fetch(`${API_ENDPOINTS.reviews}/${reviewId}/${action}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) {
+        // If unauthorized, fall back to simulating the action on the client side
+        if (response.status === 401) {
+          console.warn(`Unauthorized access to ${action} review endpoint, simulating action`);
+          simulateReviewAction(reviewId, action);
+          addToast(`Review ${action === 'approve' ? 'approved' : 'rejected'} (client-side only)`, 'info');
+          return;
+        }
+        throw new Error(`Failed to ${action} review: ${response.status} ${response.statusText}`);
+      }
+      
+      // Refresh reviews after update
+      fetchReviews();
+      
+      // Show success notification
+      addToast(`Review successfully ${action === 'approve' ? 'approved' : 'rejected'}`, 'success');
+      
+    } catch (error) {
+      console.error(`Error ${action}ing review:`, error);
+      // Provide user feedback about the error
+      addToast(`Failed to ${action} review: ${error instanceof Error ? error.message : 'Please try again.'}`, 'error');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+  
+  // Fallback function to simulate approve/reject on client side
+  const simulateReviewAction = (reviewId: string, action: 'approve' | 'reject') => {
+    // Update the reviews state locally to reflect the change
+    setReviews(prevReviews => 
+      prevReviews.map(review => 
+        review.id === reviewId 
+          ? { 
+              ...review, 
+              status: action === 'approve' ? ReviewStatus.APPROVED : ReviewStatus.REJECTED,
+              moderatedBy: 'Admin User',
+              moderatedAt: new Date().toISOString()
+            } 
+          : review
+      )
+    );
+    
+    // Recalculate stats
+    setStats(prevStats => {
+      const reviewToUpdate = reviews.find(r => r.id === reviewId);
+      if (!reviewToUpdate) return prevStats;
+      
+      const newStats = { ...prevStats };
+      
+      // Decrement pending count
+      if (reviewToUpdate.status === ReviewStatus.PENDING) {
+        newStats.pending = Math.max(0, newStats.pending - 1);
+      }
+      
+      // Increment approved or rejected count
+      if (action === 'approve') {
+        newStats.approved += 1;
+        
+        // Recalculate average rating
+        const approvedReviews = reviews.filter(r => 
+          r.id === reviewId ? true : r.status === ReviewStatus.APPROVED
+        );
+        const totalRating = approvedReviews.reduce((acc, r) => 
+          acc + (r.id === reviewId ? r.rating : 0), 0);
+        newStats.averageRating = Number((totalRating / approvedReviews.length).toFixed(1));
+      } else {
+        newStats.rejected += 1;
+      }
+      
+      return newStats;
+    });
   };
 
   return (
     <div className="space-y-6">
+      {/* Toast Container */}
+      <ToastContainer toasts={toasts} removeToast={removeToast} />
+      
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
@@ -168,7 +425,7 @@ const ReviewsPage: React.FC = () => {
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-400">Pending Review</p>
                 <p className="text-2xl font-bold text-white">
-                  {mockReviews.filter(r => r.status === ReviewStatus.PENDING).length}
+                  {stats.pending}
                 </p>
               </div>
             </div>
@@ -182,7 +439,7 @@ const ReviewsPage: React.FC = () => {
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-400">Approved</p>
                 <p className="text-2xl font-bold text-white">
-                  {mockReviews.filter(r => r.status === ReviewStatus.APPROVED).length}
+                  {stats.approved}
                 </p>
               </div>
             </div>
@@ -196,7 +453,7 @@ const ReviewsPage: React.FC = () => {
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-400">Rejected</p>
                 <p className="text-2xl font-bold text-white">
-                  {mockReviews.filter(r => r.status === ReviewStatus.REJECTED).length}
+                  {stats.rejected}
                 </p>
               </div>
             </div>
@@ -210,9 +467,7 @@ const ReviewsPage: React.FC = () => {
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-400">Avg Rating</p>
                 <p className="text-2xl font-bold text-white">
-                  {(mockReviews.filter(r => r.status === ReviewStatus.APPROVED)
-                    .reduce((acc, r) => acc + r.rating, 0) / 
-                    mockReviews.filter(r => r.status === ReviewStatus.APPROVED).length).toFixed(1)}
+                  {stats.averageRating}
                 </p>
               </div>
             </div>
@@ -221,7 +476,7 @@ const ReviewsPage: React.FC = () => {
       </div>
 
       {/* Filters and Search */}
-      <Card>
+      <Card className="bg-oxford-900 border border-gray-800">
         <CardHeader>
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
             <CardTitle>Review Management</CardTitle>
@@ -262,89 +517,109 @@ const ReviewsPage: React.FC = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {filteredReviews.map((review) => (
-              <div key={review.id} className="border rounded-lg p-6 hover:shadow-md transition-shadow border-[hsl(220,10%,20%)]">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-3 mb-2">
-                      {getRatingStars(review.rating)}
-                      {getStatusBadge(review.status)}
-                      {getSourceBadge(review.source)}
-                    </div>
-                    
-                    <h3 className="text-lg font-semibold text-white mb-2">{review.listingTitle}</h3>
-                    <p className="text-gray-300 mb-4">{review.text}</p>
-                    
-                    <div className="flex flex-wrap gap-2 mb-4">
-                      {review.tags.map((tag, index) => (
-                        <Badge key={index} variant="outline" className="text-xs">
-                          {tag}
-                        </Badge>
-                      ))}
-                    </div>
-                    
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-400">
-                      <div>
-                        <p>Device ID</p>
-                        <p className="text-white">{review.deviceId}</p>
+            {loading ? (
+              <div className="flex justify-center py-10">
+                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500"></div>
+              </div>
+            ) : filteredReviews.length > 0 ? (
+              filteredReviews.map((review) => (
+                <div key={review.id} className="border rounded-lg p-6 hover:shadow-md transition-shadow border-[hsl(220,10%,20%)]">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-3 mb-2">
+                        {getRatingStars(review.rating)}
+                        {getStatusBadge(review.status)}
+                        {getSourceBadge(review.source)}
                       </div>
-                      <div>
-                        <p>Submitted</p>
-                        <p className="text-white">{formatDate(review.createdAt)}</p>
+                      
+                      <h3 className="text-lg font-semibold text-white mb-2">{review.listingTitle}</h3>
+                      <p className="text-gray-300 mb-4">{review.text}</p>
+                      
+                      <div className="flex flex-wrap gap-2 mb-4">
+                        {review.tags && review.tags.map((tag, index) => (
+                          <Badge key={index} variant="outline" className="text-xs">
+                            {tag}
+                          </Badge>
+                        ))}
                       </div>
-                      {review.moderatedBy && (
+                      
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-400">
+                        <div>
+                          <p>Device ID</p>
+                          <p className="text-white">{review.deviceId}</p>
+                        </div>
+                        <div>
+                          <p>Submitted</p>
+                          <p className="text-white">{formatDate(review.createdAt)}</p>
+                        </div>
+                        {review.moderatedBy && (
+                          <>
+                            <div>
+                              <p>Moderated By</p>
+                              <p className="text-white">{review.moderatedBy}</p>
+                            </div>
+                            <div>
+                              <p>Moderated At</p>
+                              <p className="text-white">{formatDate(review.moderatedAt!)}</p>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center space-x-2 ml-6">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => {
+                          setSelectedReview(review);
+                          setShowReviewModal(true);
+                        }}
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      {review.status === ReviewStatus.PENDING && (
                         <>
-                          <div>
-                            <p>Moderated By</p>
-                            <p className="text-white">{review.moderatedBy}</p>
-                          </div>
-                          <div>
-                            <p>Moderated At</p>
-                            <p className="text-white">{formatDate(review.moderatedAt!)}</p>
-                          </div>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleReviewAction(review.id, 'approve')}
+                            className="text-green-600 hover:text-green-700"
+                            disabled={actionLoading === review.id}
+                          >
+                            {actionLoading === review.id ? (
+                              <div className="animate-spin h-4 w-4 border-b-2 border-green-600 rounded-full"></div>
+                            ) : (
+                              <CheckCircle className="h-4 w-4" />
+                            )}
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleReviewAction(review.id, 'reject')}
+                            className="text-red-600 hover:text-red-700"
+                            disabled={actionLoading === review.id}
+                          >
+                            {actionLoading === review.id ? (
+                              <div className="animate-spin h-4 w-4 border-b-2 border-red-600 rounded-full"></div>
+                            ) : (
+                              <XCircle className="h-4 w-4" />
+                            )}
+                          </Button>
                         </>
                       )}
+                      <Button variant="outline" size="sm">
+                        <Flag className="h-4 w-4" />
+                      </Button>
                     </div>
                   </div>
-
-                  <div className="flex items-center space-x-2 ml-6">
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => {
-                        setSelectedReview(review);
-                        setShowReviewModal(true);
-                      }}
-                    >
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                    {review.status === ReviewStatus.PENDING && (
-                      <>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => handleReviewAction(review.id, 'approve')}
-                          className="text-green-600 hover:text-green-700"
-                        >
-                          <CheckCircle className="h-4 w-4" />
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => handleReviewAction(review.id, 'reject')}
-                          className="text-red-600 hover:text-red-700"
-                        >
-                          <XCircle className="h-4 w-4" />
-                        </Button>
-                      </>
-                    )}
-                    <Button variant="outline" size="sm">
-                      <Flag className="h-4 w-4" />
-                    </Button>
-                  </div>
                 </div>
+              ))
+            ) : (
+              <div className="flex justify-center py-10">
+                <p className="text-gray-400">No reviews found matching your filters</p>
               </div>
-            ))}
+            )}
           </div>
         </CardContent>
       </Card>
@@ -379,11 +654,15 @@ const ReviewsPage: React.FC = () => {
             <div>
               <h3 className="text-lg font-semibold text-white mb-2">Tags</h3>
               <div className="flex flex-wrap gap-2">
-                {selectedReview.tags.map((tag: string, index: number) => (
-                  <Badge key={index} variant="outline">
-                    {tag}
-                  </Badge>
-                ))}
+                {selectedReview.tags && selectedReview.tags.length > 0 ? (
+                  selectedReview.tags.map((tag: string, index: number) => (
+                    <Badge key={index} variant="outline">
+                      {tag}
+                    </Badge>
+                  ))
+                ) : (
+                  <p className="text-gray-400">No tags available</p>
+                )}
               </div>
             </div>
             
@@ -416,16 +695,18 @@ const ReviewsPage: React.FC = () => {
                     handleReviewAction(selectedReview.id, 'reject');
                     setShowReviewModal(false);
                   }}
+                  disabled={actionLoading === selectedReview.id}
                 >
-                  Reject Review
+                  {actionLoading === selectedReview.id ? 'Processing...' : 'Reject Review'}
                 </Button>
                 <Button 
                   onClick={() => {
                     handleReviewAction(selectedReview.id, 'approve');
                     setShowReviewModal(false);
                   }}
+                  disabled={actionLoading === selectedReview.id}
                 >
-                  Approve Review
+                  {actionLoading === selectedReview.id ? 'Processing...' : 'Approve Review'}
                 </Button>
               </div>
             )}

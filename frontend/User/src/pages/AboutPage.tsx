@@ -458,7 +458,7 @@ export const AboutPage: React.FC = () => {
 
       {/* Footer Legal */}
       <footer className="px-6 md:px-12 py-10 border-t border-border/60 text-xs flex flex-col md:flex-row gap-4 md:items-center md:justify-between">
-        <div>© {new Date().getFullYear()} Comrade Kejani. All Rights Reserved.</div>
+        <div>© {new Date().getFullYear()} Nyamweya John & Kelvin Muemah. All Rights Reserved.</div>
         <div className="flex flex-wrap gap-4 text-muted-foreground">
           <Link to="/terms" className="hover:text-primary">Terms</Link>
           <Link to="/privacy" className="hover:text-primary">Privacy</Link>

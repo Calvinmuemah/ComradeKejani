@@ -105,6 +105,9 @@ export interface Listing {
   contactClicks: number;
   avgRating?: number;
   totalReviews: number;
+  // Direct rating fields from House model (back-end)
+  rating?: number;
+  safetyRating?: number;
 }
 
 export enum HouseType {
@@ -135,7 +138,8 @@ export enum AvailabilityStatus {
 
 // Landlord Types
 export interface Landlord {
-  id: string;
+  id?: string;
+  _id?: string; // MongoDB ID field
   name: string;
   phonePrimary: string;
   phoneAlt?: string;
@@ -270,6 +274,17 @@ export interface AnalyticsEvent {
   ip?: string;
   userAgent?: string;
   referrer?: string;
+}
+
+// Internal admin-only session analytics snapshot (client side)
+export interface HistorySnapshot {
+  ts: number;            // epoch ms
+  listingId: string;     // listing identifier
+  views: number;         // absolute views at snapshot
+  landlordViews: number; // absolute landlord views at snapshot
+  reviews: number;       // absolute reviews count at snapshot
+  dViews: number;        // delta views since previous snapshot for this listing
+  dReviews: number;      // delta reviews since previous snapshot for this listing
 }
 
 export enum EventType {

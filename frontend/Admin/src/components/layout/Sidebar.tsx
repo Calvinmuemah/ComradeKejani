@@ -7,13 +7,24 @@ import {
   Shield, 
   BarChart3, 
   Settings, 
-  FileText, 
   MessageSquare,
   MapPin,
   Image,
   UserCheck,
-  X
 } from 'lucide-react';
+import './sidebar-styles.css';
+
+// Utility function for conditional class names
+const cn = (...classes: string[]) => {
+  return classes.filter(Boolean).join(' ');
+};
+
+interface NavigationItem {
+  name: string;
+  href: string;
+  icon: React.FC<React.SVGProps<SVGSVGElement>>;
+  permission: string | null;
+}
 
 interface SidebarProps {
   isOpen: boolean;
@@ -86,94 +97,183 @@ const navigation = [
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar, isMobile = false }) => {
   // Helper function to render nav links
-  const renderNavLink = (item: typeof navigation[0]) => (
-    <NavLink
-      key={item.name}
-      to={item.href}
-      onClick={() => {
-        // Close sidebar on mobile when clicking a link
-        if (isMobile || window.innerWidth < 768) {
-          toggleSidebar();
+    const renderNavLink = (item: NavigationItem) => {
+    return (
+      <NavLink
+        key={item.name}
+        to={item.href}
+        className={({ isActive }) =>
+          cn(
+            "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors ml-8",
+            isActive
+              ? "bg-gradient-to-r from-blue-600/10 to-blue-500/20 text-blue-500 dark:from-blue-900/70 dark:to-blue-800/50 dark:text-blue-300"
+              : "text-gray-500 hover:bg-blue-500/10 dark:text-gray-400 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-300"
+          )
         }
-      }}
-      className={({ isActive }) =>
-        `group flex items-center px-2 py-2 text-sm font-medium rounded-l-2xl rounded-r-xl transition-all duration-300 relative overflow-visible ${
-          isActive
-            ? 'bg-oxford-900/90 text-white border-l-4 border-l-blue-400/80 ring-2 ring-blue-400/30 ring-inset shadow-[0_0_8px_2px_#60a5fa66]'
-            : 'text-blue-100 hover:bg-[hsla(220,80%,20%,0.5)] hover:text-white hover:shadow-md'
-        }`
-      }
-      style={({ isActive }) => !isActive ? { backdropFilter: 'blur(8px)' } : {}}
-    >
-      <span className="relative z-10 flex items-center w-full">
-        <item.icon
-          className="mr-3 h-5 w-5 flex-shrink-0"
-          aria-hidden="true"
-        />
+      >
+        <item.icon className="h-4 w-4" />
         {item.name}
-      </span>
-    </NavLink>
-  );
+      </NavLink>
+    );
+  };
 
   return (
     <>
       {/* Mobile sidebar backdrop */}
       {isOpen && isMobile && (
         <div 
-          className="fixed inset-0 z-20 bg-black/70 md:hidden"
+          className="fixed inset-0 z-20 bg-black/70 backdrop-blur-sm md:hidden"
           onClick={toggleSidebar}
+          style={{ touchAction: 'none' }}
         />
       )}
       
       {/* Sidebar */}
       <aside
-        className={`fixed md:static flex flex-col h-screen z-30 bg-oxford-900/90 backdrop-blur-lg shadow-xl transition-all duration-300 ease-in-out rounded-r-2xl
-                  ${isOpen ? 'left-0 w-64 animate-sidebar-toggle' : '-left-full md:-left-64 w-0'}`}
-        style={{ boxShadow: isOpen ? '0 8px 32px 0 rgba(31, 38, 135, 0.37)' : 'none' }}
+        className={`flex flex-col h-[calc(100vh-4rem)] z-30 bg-oxford-950/95 backdrop-blur-md shadow-lg transition-all duration-300 ease-in-out
+                  ${isOpen ? 'left-0 w-56 border-r border-gray-800/50' : '-left-full w-0'}
+                  ${!isMobile && 'md:left-0 md:w-56'}`}
+        style={{ 
+          position: 'fixed',
+          top: '4rem', /* 16px = 4rem (height of header) */
+          paddingTop: '0',
+          bottom: 0,
+          left: isMobile ? (isOpen ? '0' : '-100%') : '0', // Always visible on desktop
+          overflowY: 'hidden'
+        }}
       >
-        {/* Close button for mobile */}
-        <button
-          className="md:hidden absolute top-4 right-4 text-gray-400 hover:text-white"
-          onClick={toggleSidebar}
-        >
-          <X className="h-6 w-6" />
-          <span className="sr-only">Close sidebar</span>
-        </button>
+        {/* Only mobile toggle button - no duplicate logo needed since it's in the header */}
+        <div className="flex-shrink-0 flex items-center justify-end px-4 h-12">
+          {isMobile && isOpen && (
+            <button 
+              className="p-1.5 rounded-lg bg-oxford-800 hover:bg-oxford-700 text-gray-400 hover:text-white transition-colors"
+              onClick={toggleSidebar}
+            >
+              <div className="h-5 w-5 flex flex-col justify-center items-center gap-1">
+                <div className="w-4 h-0.5 bg-current transform rotate-45 translate-y-0.5"></div>
+                <div className="w-4 h-0.5 bg-current transform -rotate-45 -translate-y-0.5"></div>
+              </div>
+            </button>
+          )}
+        </div>
 
-        <div className="mt-5 flex flex-col flex-1 overflow-y-auto">
-          <nav className="px-2 space-y-8" aria-label="Sidebar">
-            {/* Main */}
-            <div className="space-y-2">
-              <div className="text-xs uppercase tracking-wider text-gray-400 mb-2">Main</div>
-              {navigation.filter(item => ["Dashboard"].includes(item.name)).map(renderNavLink)}
+        <div className="mt-2 flex flex-col flex-1 overflow-y-auto touch-pan-y hide-scrollbar" style={{ 
+          maxHeight: 'calc(100vh - 8rem)', /* Reduced to make room for profile card */
+          WebkitOverflowScrolling: 'touch',
+          paddingBottom: '100px' /* Added more space for profile card and copyright */
+        }}>
+          <nav className="px-2 space-y-4 relative scroll-smooth hide-scrollbar" aria-label="Sidebar">
+              {/* Vertical timeline line */}
+            <div className="absolute left-3 top-0 bottom-8 w-px bg-gradient-to-b from-blue-700/70 via-blue-700/30 to-transparent pointer-events-none"></div>            {/* Main */}
+            <div className="space-y-2 relative">
+              <div className="absolute left-3 top-4 -translate-x-1/2 w-6 h-6 rounded-full flex items-center justify-center bg-gradient-to-br from-blue-600 to-indigo-600 border border-blue-400/30 shadow-[0_0_0_2px_rgba(37,99,235,0.25)]">
+                <Home className="h-3 w-3 text-white" />
+              </div>
+              {/* Connecting line from section title to nav items */}
+              <div className="absolute left-3 top-16 bottom-0 w-px bg-blue-700/20"></div>
+              <div className="text-xs uppercase tracking-wider text-gray-400 mb-2 pl-10 pt-5">MAIN</div>
+              <div className="relative">
+                {navigation.filter(item => ["Dashboard"].includes(item.name)).map((item) => (
+                  <div key={item.name} className="relative">
+                    {/* Horizontal connecting line */}
+                    <div className="absolute left-3 top-3 w-5 h-px bg-blue-700/20"></div>
+                    {renderNavLink(item)}
+                  </div>
+                ))}
+              </div>
             </div>
             
             {/* Management */}
-            <div className="space-y-2">
-              <div className="text-xs uppercase tracking-wider text-gray-400 mb-2">Management</div>
-              {navigation.filter(item => ["Listings", "Landlords", "Users", "Reviews", "Media Library", "Zones", "Safety & Alerts", "Analytics"].includes(item.name)).map(renderNavLink)}
+            <div className="space-y-2 relative">
+              <div className="absolute left-3 top-4 -translate-x-1/2 w-6 h-6 rounded-full flex items-center justify-center bg-gradient-to-br from-emerald-600 to-teal-600 border border-emerald-400/30 shadow-[0_0_0_2px_rgba(16,185,129,0.25)]">
+                <Building className="h-3 w-3 text-white" />
+              </div>
+              {/* Connecting line from section title to nav items */}
+              <div className="absolute left-3 top-16 bottom-0 w-px bg-emerald-700/20"></div>
+              <div className="text-xs uppercase tracking-wider text-gray-400 mb-2 pl-10 pt-5">MANAGEMENT</div>
+              <div className="relative">
+                {navigation.filter(item => ["Listings", "Landlords", "Users", "Reviews", "Media Library", "Zones", "Safety & Alerts", "Analytics"].includes(item.name)).map((item) => (
+                  <div key={item.name} className="relative">
+                    {/* Horizontal connecting line */}
+                    <div className="absolute left-3 top-3 w-5 h-px bg-emerald-700/20"></div>
+                    {renderNavLink(item)}
+                  </div>
+                ))}
+              </div>
             </div>
             
             {/* Settings */}
-            <div className="space-y-2">
-              <div className="text-xs uppercase tracking-wider text-gray-400 mb-2">Settings</div>
-              {navigation.filter(item => ["Settings"].includes(item.name)).map(renderNavLink)}
+            <div className="space-y-2 relative">
+              <div className="absolute left-3 top-4 -translate-x-1/2 w-6 h-6 rounded-full flex items-center justify-center bg-gradient-to-br from-amber-600 to-orange-600 border border-amber-400/30 shadow-[0_0_0_2px_rgba(245,158,11,0.25)]">
+                <Settings className="h-3 w-3 text-white" />
+              </div>
+              {/* Connecting line from section title to nav items */}
+              <div className="absolute left-3 top-16 bottom-0 w-px bg-amber-700/20"></div>
+              <div className="text-xs uppercase tracking-wider text-gray-400 mb-2 pl-10 pt-5">SETTINGS</div>
+              <div className="relative">
+                {navigation.filter(item => ["Settings"].includes(item.name)).map((item) => (
+                  <div key={item.name} className="relative">
+                    {/* Horizontal connecting line */}
+                    <div className="absolute left-3 top-3 w-5 h-px bg-amber-700/20"></div>
+                    {renderNavLink(item)}
+                  </div>
+                ))}
+              </div>
+            </div>
+            
+            {/* Copyright Section */}
+            <div className="space-y-2 relative mt-8 mb-12">
+              <div className="absolute left-3 top-4 -translate-x-1/2 w-6 h-6 rounded-full flex items-center justify-center bg-gradient-to-br from-purple-600 to-pink-600 border border-purple-400/30 shadow-[0_0_0_2px_rgba(147,51,234,0.25)]">
+                <div className="text-white text-xs font-bold">©</div>
+              </div>
+              {/* Connecting line from section title to names */}
+              <div className="absolute left-3 top-16 bottom-0 w-px bg-purple-700/20"></div>
+              <div className="text-xs uppercase tracking-wider text-gray-400 mb-2 pl-10 pt-5">COPYRIGHT</div>
+
+              <div className="relative">
+                {/* Developers with connecting line */}
+                <div className="relative mb-1">
+                  <div className="absolute left-3 top-3 w-5 h-px bg-purple-700/20"></div>
+                  <div className="flex flex-col gap-1 rounded-md px-3 py-2 text-xs ml-8 text-gray-400">
+                    <div className="flex items-center gap-2">
+                      <span className="text-purple-400 font-medium">Developed by:</span>
+                    </div>
+                    <div className="flex items-center gap-2 pl-2">
+                      <span className="h-1.5 w-1.5 rounded-full bg-purple-500"></span>
+                      <span>Nyamweya John</span>
+                    </div>
+                    <div className="flex items-center gap-2 pl-2">
+                      <span className="h-1.5 w-1.5 rounded-full bg-blue-500"></span>
+                      <span>Kelvin Muemah</span>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Year */}
+                <div className="text-xs text-gray-500 pl-10 mt-1">
+                  © {new Date().getFullYear()} All Rights Reserved.
+                </div>
+              </div>
             </div>
           </nav>
           
-          {/* User profile at the bottom with frame card and header content */}
-          <div className="flex-1" />
-          <div className="px-4 pb-8">
-            <div className="border border-blue-900/40 bg-oxford-900/80 rounded-2xl shadow-lg flex flex-col items-center py-5 px-4">
-              <div className="flex items-center justify-center h-12 w-12 rounded-full bg-blue-600 text-white text-xl font-bold mb-2">
+          {/* User profile at the bottom - fixed position */}
+          <div className="absolute bottom-0 left-0 right-0 px-4 pb-3 pt-2 bg-gradient-to-t from-oxford-950 to-transparent">
+            <div className="border border-blue-900/20 bg-oxford-950/90 rounded-lg shadow-inner flex items-center p-3 gap-3">
+              <div className="flex items-center justify-center h-8 w-8 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-xs font-bold">
                 C
               </div>
-              <div className="text-base font-semibold text-white">Comrade Kejani Admin</div>
-              <div className="text-xs text-blue-200 mt-1 capitalize">super admin</div>
+              <div className={`transition-opacity duration-200 ${isOpen ? 'opacity-100' : 'opacity-0'}`}>
+                <div className="text-sm font-medium text-white truncate">Admin</div>
+                <div className="text-xs text-blue-300/80 mt-0.5 capitalize">super admin</div>
+              </div>
             </div>
           </div>
         </div>
       </aside>
+      
+      {/* Bottom padding for mobile scrolling safety */}
+      {isOpen && isMobile && <div className="h-16 invisible" />}
     </>
   );
 };

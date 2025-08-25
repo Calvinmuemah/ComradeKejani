@@ -1,5 +1,5 @@
-import React from 'react';
-import { Bell, Search, ChevronDown, LogOut, User, Menu, X } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Bell, Search, ChevronDown, LogOut, User } from 'lucide-react';
 import { useAuth } from '../../contexts/useAuth';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
@@ -11,34 +11,53 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ toggleSidebar, isSidebarOpen }) => {
   const { user, logout } = useAuth();
+  const [isMobileView, setIsMobileView] = useState(false);
+
+  useEffect(() => {
+    // Function to check if we're in mobile view
+    const checkMobileView = () => {
+      setIsMobileView(window.innerWidth < 768);
+    };
+    
+    // Check on mount
+    checkMobileView();
+    
+    // Add event listener for window resize
+    window.addEventListener('resize', checkMobileView);
+    
+    // Clean up
+    return () => window.removeEventListener('resize', checkMobileView);
+  }, []);
 
   return (
-    <header className="shadow-sm bg-oxford-900 w-full animate-fade-in z-40">
-      <div className="mx-auto px-4 sm:px-6 lg:px-8">
+    <header className="shadow-md bg-oxford-900/80 backdrop-blur-md w-full animate-fade-in z-40 fixed top-0 left-0 right-0">
+      <div className={`mx-auto ${!isMobileView ? 'pl-0' : ''} transition-all duration-300 ease-in-out`}>
         <div className="flex h-16 justify-between items-center">
-          {/* Mobile menu button */}
-          <button
-            type="button"
-            className="md:hidden p-2 rounded-md text-gray-400 hover:text-white hover:bg-oxford-800 focus:outline-none"
-            onClick={toggleSidebar}
-          >
-            <span className="sr-only">{isSidebarOpen ? 'Close sidebar' : 'Open sidebar'}</span>
-            {isSidebarOpen ? (
-              <X className="h-6 w-6" aria-hidden="true" />
-            ) : (
-              <Menu className="h-6 w-6" aria-hidden="true" />
-            )}
-          </button>
+          {/* Only show toggle button on mobile when sidebar is closed */}
+          {isMobileView && !isSidebarOpen && (
+            <button
+              type="button"
+              className="p-2 rounded-md text-gray-400 hover:text-white hover:bg-oxford-800 focus:outline-none ml-2"
+              onClick={toggleSidebar}
+              style={{ 
+                borderRadius: '0 0.375rem 0.375rem 0', 
+                paddingLeft: '0.75rem'
+              }}
+            >
+              <span className="sr-only">Open sidebar</span>
+              <ChevronDown className="h-6 w-6 rotate-90" aria-hidden="true" />
+            </button>
+          )}
 
           {/* Logo and name */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 pl-4">
             <img
               src="/johnny.png"
               alt="Logo"
               className="h-8 w-8 sm:h-10 sm:w-10 object-cover rounded-xl border-2 border-blue-900 shadow"
             />
             <div>
-              <h1 className="text-base sm:text-lg font-bold text-white">Comrade Kejani</h1>
+              <h1 className="text-base sm:text-xl font-bold text-white">Comrade Kejani</h1>
               <p className="text-xs text-blue-200 hidden sm:block">Admin System</p>
             </div>
           </div>

@@ -5,7 +5,7 @@ const cloudinary = require('../config/cloudinary');
 // Create House
 exports.createHouse = async (req, res) => {
   try {
-    const { title, price, type, location, amenities, landlordId, status } = req.body;
+  const { title, price, type, location, amenities, landlordId, status, rating, safetyRating } = req.body;
 
     // Check landlord exists
     const existingLandlord = await Landlord.findById(landlordId);
@@ -13,6 +13,10 @@ exports.createHouse = async (req, res) => {
 
     // Handle uploaded images via Cloudinary
     const images = req.files ? req.files.map(file => file.path) : req.body.images || [];
+
+    // Coerce rating fields if provided (keep defaults if undefined or empty)
+    const parsedRating = rating === undefined || rating === '' ? undefined : Math.min(5, Math.max(0, Number(rating)));
+    const parsedSafety = safetyRating === undefined || safetyRating === '' ? undefined : Math.min(5, Math.max(0, Number(safetyRating)));
 
     const house = new House({
       title,
@@ -22,7 +26,9 @@ exports.createHouse = async (req, res) => {
       amenities,
       landlord: landlordId,
       status,
-      images
+      images,
+      ...(parsedRating !== undefined && !Number.isNaN(parsedRating) ? { rating: parsedRating } : {}),
+      ...(parsedSafety !== undefined && !Number.isNaN(parsedSafety) ? { safetyRating: parsedSafety } : {})
     });
 
     await house.save();
@@ -59,7 +65,7 @@ exports.getHouseById = async (req, res) => {
 // Update House
 exports.updateHouse = async (req, res) => {
   try {
-    const { title, price, type, location, amenities, status, landlordId, replaceImages } = req.body;
+  const { title, price, type, location, amenities, status, landlordId, replaceImages, rating, safetyRating } = req.body;
 
     // Validate landlord if provided
     if (landlordId) {
@@ -78,6 +84,14 @@ exports.updateHouse = async (req, res) => {
     if (amenities) house.amenities = amenities;
     if (status) house.status = status;
     if (landlordId) house.landlord = landlordId;
+    if (rating !== undefined && rating !== '') {
+      const r = Math.min(5, Math.max(0, Number(rating)));
+      if (!Number.isNaN(r)) house.rating = r;
+    }
+    if (safetyRating !== undefined && safetyRating !== '') {
+      const sr = Math.min(5, Math.max(0, Number(safetyRating)));
+      if (!Number.isNaN(sr)) house.safetyRating = sr;
+    }
 
     // Handle images uploaded via Cloudinary
     if (req.files && req.files.length > 0) {

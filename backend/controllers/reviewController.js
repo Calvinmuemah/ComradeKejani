@@ -72,20 +72,27 @@ exports.getAllReviews = async (req, res) => {
             .sort({ createdAt: -1 });      // Sort by newest first
         
         // Transform the data to match the frontend expectations
-        const formattedReviews = reviews.map(review => ({
-            id: review._id,
-            listingId: review.houseId._id,
-            listingTitle: review.houseId.title || 'Unknown Property',
-            rating: review.rating,
-            text: review.comment,
-            tags: extractTags(review.comment),
-            source: 'WEB_FORM', // Default source
-            deviceId: 'web_' + review._id.toString().substring(0, 6),
-            status: review.status || 'PENDING', // Default to pending if not set
-            createdAt: review.createdAt,
-            moderatedBy: review.moderatedBy,
-            moderatedAt: review.moderatedAt
-        }));
+        const formattedReviews = reviews.map(review => {
+            // Safely handle cases where houseId might be null or not populated
+            const houseId = review.houseId || {};
+            const listingId = houseId._id ? houseId._id.toString() : '';
+            const listingTitle = houseId.title || 'Unknown Property';
+            
+            return {
+                id: review._id,
+                listingId: listingId,
+                listingTitle: listingTitle,
+                rating: review.rating,
+                text: review.comment,
+                tags: extractTags(review.comment),
+                source: 'WEB_FORM', // Default source
+                deviceId: 'web_' + review._id.toString().substring(0, 6),
+                status: review.status || 'PENDING', // Default to pending if not set
+                createdAt: review.createdAt,
+                moderatedBy: review.moderatedBy,
+                moderatedAt: review.moderatedAt
+            };
+        });
         
         res.status(200).json(formattedReviews);
     } catch (err) {

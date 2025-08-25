@@ -15,7 +15,8 @@ const userSchema = new mongoose.Schema({
     },
     required: [true, 'User phone number required']
   },
-  avatar: { type: String }
+  avatar: { type: String }, // secure URL
+  avatarPublicId: { type: String } // for deleting/replacing in Cloudinary
 }, { timestamps: true });
 
 module.exports = mongoose.model('User', userSchema);

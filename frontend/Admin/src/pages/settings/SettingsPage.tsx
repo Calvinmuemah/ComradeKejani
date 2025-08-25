@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Ca
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Badge } from '../../components/ui/Badge';
-import { fetchAdminProfile, updateAdminProfile, AdminProfile } from '../../lib/api';
+import { fetchAdminProfile, updateAdminProfile, AdminProfile, uploadAdminAvatar, deleteAdminAvatar } from '../../lib/api';
 import { useAuth } from '../../contexts/useAuth';
 import { useToast } from '../../components/ui/Toast';
 
@@ -16,6 +16,8 @@ const SettingsPage: React.FC = () => {
   const [editOpen, setEditOpen] = useState(false);
   const [updating, setUpdating] = useState(false);
   const [form, setForm] = useState({ name: '', email: '', phone: '', avatar: '' });
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const [avatarDeleting, setAvatarDeleting] = useState(false);
 
   useEffect(()=>{
     const load = async () => {
@@ -35,6 +37,32 @@ const SettingsPage: React.FC = () => {
   const startEdit = () => { if(profile){ setForm({ name: profile.name, email: profile.email, phone: profile.phone, avatar: profile.avatar || '' }); } setEditOpen(true); };
   const cancelEdit = () => { setEditOpen(false); };
   const handleChange = (k: string, v: string) => setForm(f=>({ ...f, [k]: v }));
+  const handleAvatarFile = async (file?: File) => {
+    if(!file || !profile) return;
+    setAvatarUploading(true);
+    try {
+      const updated = await uploadAdminAvatar(profile._id, file);
+      setProfile(updated);
+      setForm(f=>({ ...f, avatar: updated.avatar || '' }));
+      notify('Avatar updated','success');
+      if (refreshProfile) refreshProfile();
+    } catch(err){
+      notify(err instanceof Error ? err.message : 'Avatar upload failed','error');
+    } finally { setAvatarUploading(false); }
+  };
+  const handleDeleteAvatar = async () => {
+    if(!profile) return;
+    setAvatarDeleting(true);
+    try {
+      const updated = await deleteAdminAvatar(profile._id);
+      setProfile(updated);
+      setForm(f=>({ ...f, avatar: '' }));
+      notify('Avatar removed','success');
+      if (refreshProfile) refreshProfile();
+    } catch(err){
+      notify(err instanceof Error ? err.message : 'Failed to delete avatar','error');
+    } finally { setAvatarDeleting(false); }
+  };
   const submit = async () => {
     if(!profile) return; setUpdating(true);
     try {
@@ -127,13 +155,21 @@ const SettingsPage: React.FC = () => {
                 <label className="block text-sm text-gray-400 mb-1">Phone (+254XXXXXXXXX)</label>
                 <Input value={form.phone} onChange={e=>handleChange('phone', e.target.value)} placeholder="+2547XXXXXXXX" />
               </div>
-              <div>
-                <label className="block text-sm text-gray-400 mb-1">Avatar URL</label>
-                <div className="flex gap-2">
-                  <Input value={form.avatar} onChange={e=>handleChange('avatar', e.target.value)} placeholder="https://..." />
-                  {form.avatar && <div className="w-10 h-10 rounded bg-gray-800 overflow-hidden flex items-center justify-center">
-                    <img src={form.avatar} alt="preview" className="object-cover w-full h-full" />
-                  </div>}
+              <div className="space-y-2">
+                <label className="block text-sm text-gray-400">Avatar</label>
+                <div className="flex flex-col gap-3">
+                  <div className="flex gap-2 items-center">
+                    <Input value={form.avatar} onChange={e=>handleChange('avatar', e.target.value)} placeholder="https://... (optional manual URL)" />
+                    {form.avatar && <div className="w-10 h-10 rounded bg-gray-800 overflow-hidden flex items-center justify-center">
+                      <img src={form.avatar} alt="preview" className="object-cover w-full h-full" />
+                    </div>}
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <input id="avatarFile" type="file" accept="image/*" onChange={e=>handleAvatarFile(e.target.files?.[0])} className="text-sm file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:bg-blue-600 file:text-white hover:file:bg-blue-500" />
+                    {avatarUploading && <span className="text-xs text-blue-400">Uploading...</span>}
+                    {profile?.avatar && !avatarUploading && <Button size="sm" variant="outline" onClick={handleDeleteAvatar} disabled={avatarDeleting}>{avatarDeleting? 'Removing...' : 'Remove'}</Button>}
+                  </div>
+                  <p className="text-[11px] text-gray-500">Upload a new image to replace current avatar. Automatically stored in Cloudinary.</p>
                 </div>
               </div>
             </div>

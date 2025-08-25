@@ -1,12 +1,15 @@
 const express = require('express');
 const router = express.Router();
-const { register, login, getUserDetails, updateUser, listAdmins } = require('../controllers/users');
+const { register, login, getUserDetails, updateUser, listAdmins, uploadAvatar, deleteAvatar } = require('../controllers/users');
+const upload = require('../middlewares/upload');
 
 router.get('/', listAdmins); // list all admins
 router.post('/register', register);
 router.post('/login', login);
 router.get('/:userId', getUserDetails);
 router.put('/:userId', updateUser);
+router.post('/:userId/avatar', upload.single('avatar'), uploadAvatar);
+router.delete('/:userId/avatar', deleteAvatar);
 
 module.exports = router;
 

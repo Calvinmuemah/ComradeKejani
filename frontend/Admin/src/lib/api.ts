@@ -66,6 +66,20 @@ export interface UpdateAdminProfilePayload {
   avatar?: string;
 }
 
+export async function uploadAdminAvatar(userId: string, file: File): Promise<AdminProfile> {
+  const form = new FormData();
+  form.append('avatar', file);
+  const res = await apiFetch(`${API_ENDPOINTS.adminUserById(userId)}/avatar`, { method: 'POST', auth: true, body: form });
+  if (!res.ok) throw new Error('Failed to upload avatar');
+  return res.json();
+}
+
+export async function deleteAdminAvatar(userId: string): Promise<AdminProfile> {
+  const res = await apiFetch(`${API_ENDPOINTS.adminUserById(userId)}/avatar`, { method: 'DELETE', auth: true });
+  if (!res.ok) throw new Error('Failed to delete avatar');
+  return res.json();
+}
+
 export async function fetchAdminProfile(userId: string): Promise<AdminProfile> {
   const res = await apiFetch(API_ENDPOINTS.adminUserById(userId), { auth: true });
   if(!res.ok) throw new Error('Failed to load profile');
@@ -108,6 +122,7 @@ interface ApiFetchOptions extends RequestInit {
   auth?: boolean; // inject bearer token automatically
   logBody?: boolean; // force logging of request body (stringifiable)
   suppressLog?: boolean; // disable logging for this call
+  forceVerbose?: boolean; // if true, log even if global fetch logger active
 }
 
 interface LoggedResponseMeta {
@@ -149,8 +164,11 @@ async function extractResponsePreview(res: Response): Promise<{ preview: unknown
 }
 
 export async function apiFetch(url: string, options: ApiFetchOptions = {}): Promise<Response> {
-  const { auth, suppressLog, logBody, headers: optHeaders, body, ...rest } = options;
+  const { auth, suppressLog, logBody, forceVerbose, headers: optHeaders, body, ...rest } = options;
   const token = auth ? getAuthToken() : null;
+  // If a global fetch logger is installed, avoid duplicate logs unless forceVerbose set
+  interface FetchLoggerWindow { __FETCH_LOGGER_INSTALLED__?: boolean }
+  const globalLoggerInstalled = (window as unknown as FetchLoggerWindow).__FETCH_LOGGER_INSTALLED__;
   // Normalize headers to Record<string,string>
   const headers: Record<string, string> = {};
   if (optHeaders) {
@@ -167,10 +185,12 @@ export async function apiFetch(url: string, options: ApiFetchOptions = {}): Prom
   if (token) headers['Authorization'] = `Bearer ${token}`;
   const start = performance.now();
   let requestBodyPreview: string | undefined = undefined;
-  if (!suppressLog && body && (logBody || typeof body === 'string')) {
+  if (!suppressLog && !globalLoggerInstalled || forceVerbose) {
+    if (body && (logBody || typeof body === 'string')) {
     requestBodyPreview = typeof body === 'string' ? (body.length > 1000 ? body.slice(0, 1000) + '…(truncated)' : body) : '[body omitted]';
+    }
   }
-  if (!suppressLog) {
+  if (!suppressLog && (!globalLoggerInstalled || forceVerbose)) {
     console.debug('%cAPI REQUEST','color:#1976d2;font-weight:bold;', {
       method: (rest.method || 'GET').toUpperCase(),
       url,
@@ -188,7 +208,7 @@ export async function apiFetch(url: string, options: ApiFetchOptions = {}): Prom
     throw err;
   }
   const durationMs = Math.round(performance.now() - start);
-  if (!suppressLog) {
+  if (!suppressLog && (!globalLoggerInstalled || forceVerbose)) {
     extractResponsePreview(response).then(({ preview, size, contentType }) => {
       const meta: LoggedResponseMeta = { status: response.status, ok: response.ok, url: response.url, durationMs, contentType, size };
       const style = response.ok ? 'color:#2e7d32;font-weight:bold;' : 'color:#d32f2f;font-weight:bold;';

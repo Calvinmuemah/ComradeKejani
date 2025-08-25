@@ -7,7 +7,8 @@ router.get('/', listAdmins); // list all admins
 router.post('/register', register);
 router.post('/login', login);
 router.get('/:userId', getUserDetails);
-router.put('/:userId', updateUser);
+// Unified update accepts multipart (optional avatar file) or JSON
+router.put('/:userId', upload.single('avatar'), updateUser);
 router.post('/:userId/avatar', upload.single('avatar'), uploadAvatar);
 router.delete('/:userId/avatar', deleteAvatar);
 

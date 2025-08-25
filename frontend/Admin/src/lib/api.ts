@@ -63,7 +63,10 @@ export interface UpdateAdminProfilePayload {
   name?: string;
   email?: string;
   phone?: string;
-  avatar?: string;
+  avatar?: string; // manual URL (optional)
+  avatarFile?: File | null; // new avatar file (optional)
+  removeAvatar?: boolean; // request to clear existing avatar
+  updatedAtVersion?: number; // optimistic concurrency (ms timestamp)
 }
 
 export async function uploadAdminAvatar(userId: string, file: File): Promise<AdminProfile> {
@@ -87,11 +90,18 @@ export async function fetchAdminProfile(userId: string): Promise<AdminProfile> {
 }
 
 export async function updateAdminProfile(userId: string, payload: UpdateAdminProfilePayload): Promise<AdminProfile> {
+  const form = new FormData();
+  if (payload.name !== undefined) form.append('name', payload.name);
+  if (payload.email !== undefined) form.append('email', payload.email);
+  if (payload.phone !== undefined) form.append('phone', payload.phone);
+  if (payload.avatar !== undefined) form.append('avatar', payload.avatar); // manual URL
+  if (payload.removeAvatar) form.append('removeAvatar', 'true');
+  if (payload.avatarFile) form.append('avatar', payload.avatarFile); // file overrides manual
+  if (payload.updatedAtVersion) form.append('updatedAtVersion', String(payload.updatedAtVersion));
   const res = await apiFetch(API_ENDPOINTS.adminUserById(userId), {
     method: 'PUT',
     auth: true,
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
+    body: form,
   });
   if(!res.ok) throw new Error('Failed to update profile');
   return res.json();

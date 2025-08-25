@@ -105,20 +105,99 @@ exports.getUserDetails = async (req, res) => {
     }
 };
 
+// Unified update (supports JSON or multipart/form-data). For multipart you can send text fields and optional file field 'avatar'.
 exports.updateUser = async (req, res) => {
   try {
     const { userId } = req.params;
-    const { name, email, phone, avatar } = req.body;
-    // Basic field update (avatar string allowed for backward compatibility)
-    const updatedUser = await User.findByIdAndUpdate(
-      userId,
-      { name, email, phone, ...(avatar ? { avatar } : {}) },
-      { new: true, runValidators: true, context: 'query' }
-    ).select('-__v -password');
-    if (!updatedUser) return res.status(404).json({ error: 'User not found' });
-    res.status(200).json(updatedUser);
+    const user = await User.findById(userId);
+    if(!user) return res.status(404).json({ error: 'User not found' });
+
+    // Optimistic concurrency: client supplies previous updatedAt timestamp (ms)
+    if (req.body && req.body.updatedAtVersion) {
+      const clientVersion = parseInt(req.body.updatedAtVersion, 10);
+      if (!isNaN(clientVersion)) {
+        const serverVersion = new Date(user.updatedAt).getTime();
+        if (serverVersion !== clientVersion) {
+          return res.status(409).json({ error: 'conflict', message: 'Profile was updated elsewhere. Reload and try again.' });
+        }
+      }
+    }
+
+    // Text fields may come from req.body (either JSON or multer processed)
+    const { name, email, phone, avatar: manualAvatar, removeAvatar } = req.body;
+
+    if (name !== undefined && name !== '') user.name = name;
+    if (email !== undefined && email !== '') user.email = email;
+    if (phone !== undefined && phone !== '') user.phone = phone;
+
+    // Handle avatar removal request (only if not simultaneously uploading new file)
+    if (removeAvatar === 'true' && !req.file) {
+      if (user.avatarPublicId) {
+        try { await cloudinary.uploader.destroy(user.avatarPublicId); } catch (e) { console.warn('Failed to delete avatar during removal', e.message); }
+      }
+      user.avatar = undefined;
+      user.avatarPublicId = undefined;
+    }
+
+    // If a file is uploaded, treat it as new avatar (overrides manualAvatar string)
+    let oldPublicIdForCleanup = null;
+    let newPublicIdCreated = null;
+    if (req.file) {
+      // Upload already completed by multer-storage-cloudinary (req.file.*)
+      let secureUrl = req.file.path;
+      let publicId = req.file.filename || req.file.public_id;
+      if (!secureUrl || !publicId) {
+        // Manual upload fallback
+        const uploadResp = await cloudinary.uploader.upload(req.file.path, {
+          folder: 'avatars',
+          transformation: [{ width: 256, height: 256, crop: 'fill', gravity: 'face' }]
+        });
+        secureUrl = uploadResp.secure_url;
+        publicId = uploadResp.public_id;
+      }
+      oldPublicIdForCleanup = user.avatarPublicId || null; // mark old to delete after successful save
+      user.avatar = secureUrl;
+      user.avatarPublicId = publicId;
+      newPublicIdCreated = publicId;
+    } else if (manualAvatar !== undefined) {
+      // Manual avatar URL provided (and no new file). Setting manual clears publicId tracking.
+      if (manualAvatar === '') {
+        // Empty string indicates clearing (if removeAvatar flag not used)
+        if (user.avatarPublicId) {
+          try { await cloudinary.uploader.destroy(user.avatarPublicId); } catch (e) { console.warn('Failed to delete avatar (manual clear)', e.message); }
+        }
+        user.avatar = undefined;
+        user.avatarPublicId = undefined;
+      } else {
+        user.avatar = manualAvatar;
+        // manual external URL => remove publicId so deletion attempts don't target unknown asset
+        if (user.avatarPublicId) {
+          try { await cloudinary.uploader.destroy(user.avatarPublicId); } catch {/* ignore */}
+        }
+        user.avatarPublicId = undefined;
+      }
+    }
+
+    try {
+      await user.save();
+    } catch (saveErr) {
+      // Rollback: if a new avatar was created but save failed, try delete new to avoid orphan
+      if (newPublicIdCreated) {
+        try { await cloudinary.uploader.destroy(newPublicIdCreated); } catch {/* ignore */}
+      }
+      throw saveErr;
+    }
+
+    // Only after successful save delete old avatar (reduces risk of losing avatar on failure)
+    if (oldPublicIdForCleanup && oldPublicIdForCleanup !== user.avatarPublicId) {
+      try { await cloudinary.uploader.destroy(oldPublicIdForCleanup); } catch (e) { console.warn('Failed to delete old avatar post-save', e.message); }
+    }
+
+    const sanitized = await User.findById(userId).select('-__v -password');
+    res.status(200).json(sanitized);
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    console.error('Update user error', err);
+    res.status(400).json({ error: err.message || 'Update failed' });
   }
 };
 
